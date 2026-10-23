@@ -1,0 +1,1286 @@
+<!doctype html>
+<html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html,body{margin:0}[hidden]{display:none!important}</style></head><body>
+<meta charset="utf-8">
+<title>Spatial Marvels</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
+<style>
+@property --pop { syntax: '<number>'; inherits: true; initial-value: 0; }
+
+/* Layout: Apple spatial wallpaper. Blurred photo fills the screen, one depth card floats centre,
+   a glass platter carries the label and the iOS page control. Dark appearance only, like visionOS. */
+:root {
+  --label: #ffffff;
+  --label-2: rgba(235, 235, 245, .62);
+  --label-3: rgba(235, 235, 245, .32);
+  --separator: rgba(255, 255, 255, .16);
+  --fill: rgba(120, 120, 128, .24);
+  --glass: rgba(40, 40, 46, .38);
+  --glass-edge: rgba(255, 255, 255, .22);
+  --tint: #0a84ff;
+  --ground: #000000;
+  --sf: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", system-ui, "Segoe UI", sans-serif;
+  --sf-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, "Segoe UI", sans-serif;
+  --sf-mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--ground);
+  color: var(--label);
+  font: 400 15px/1.4 var(--sf);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  letter-spacing: -.01em;
+}
+.wallpaper { position: fixed; inset: -60px; z-index: -2; pointer-events: none; }
+.wallpaper img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  filter: blur(48px) saturate(1.5) brightness(.62); transform: scale(1.1);
+  opacity: 0; transition: opacity 1s ease;
+}
+.wallpaper img.on { opacity: 1; }
+.wallpaper::after { content: ""; position: absolute; inset: 0; background: radial-gradient(80% 70% at 50% 40%, transparent, rgba(0,0,0,.55)); }
+
+.app {
+  box-sizing: border-box; min-height: 100%;
+  display: grid; grid-template-rows: auto minmax(300px, 1fr) auto; gap: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px 16px;
+}
+
+/* glass material */
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  border: .5px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 10px 30px rgba(0,0,0,.25);
+}
+
+/* toolbar */
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.title { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.title h1 { margin: 0; font: 700 22px/1.2 var(--sf-display); letter-spacing: -.02em; }
+.title span { color: var(--label-2); font-size: 13px; }
+.controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.status { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 16px; font-size: 13px; color: var(--label-2); }
+.status b { color: var(--label); font-weight: 600; }
+.status i { width: 7px; height: 7px; border-radius: 50%; background: #30d158; box-shadow: 0 0 8px #30d158; }
+.capsule {
+  height: 32px; padding: 0 14px; border-radius: 16px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  font: 600 13px/1 var(--sf); color: var(--label);
+}
+.capsule:hover { background: rgba(80, 80, 90, .5); }
+.capsule[aria-pressed="true"] { background: var(--tint); border-color: transparent; }
+.capsule svg { width: 15px; height: 15px; }
+.capsule:focus-visible, .nav:focus-visible, .dot:focus-visible, .credit a:focus-visible { outline: 3px solid rgba(10,132,255,.7); outline-offset: 2px; }
+#camPreview { width: 24px; height: 18px; border-radius: 4px; }
+.note { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--label-2); text-align: right; }
+
+/* stage + depth cards */
+.stage {
+  position: relative; overflow: hidden; touch-action: pan-y; cursor: grab;
+  user-select: none; -webkit-user-select: none;
+  perspective: calc(var(--cw, 800px) * 1.6); perspective-origin: 50% 50%;
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+}
+.stage.grabbing { cursor: grabbing; }
+.card {
+  position: absolute; left: 50%; top: 50%;
+  width: var(--cw, 800px); height: var(--ch, 500px);
+  margin-left: calc(var(--cw, 800px) / -2); margin-top: calc(var(--ch, 500px) / -2 + var(--lift, 0px));
+  transform-style: preserve-3d;
+  transition: transform .8s cubic-bezier(.2, .8, .2, 1), opacity .6s ease, --pop 1.2s cubic-bezier(.3, 1.4, .5, 1);
+}
+.card.is-active { --pop: 1; }
+.card.dragging { transition: --pop 1.2s cubic-bezier(.3, 1.4, .5, 1); }
+.rig { position: absolute; inset: 0; transform-style: preserve-3d; will-change: transform; }
+/* each plane moves forward but shrinks to match, so at rest the photo lines up; tilting pulls them apart */
+.plane {
+  position: absolute; inset: 0; pointer-events: none;
+  transform: translateZ(calc(var(--z) * var(--u, .8) * var(--pop) * 1px)) scale(calc(1 - var(--z) * var(--pop) / 1600));
+}
+.plane svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.plane.lift { filter: drop-shadow(0 calc(var(--u, .8) * 10px) calc(var(--u, .8) * 14px) rgba(0, 0, 0, .38)); }
+.edge {
+  position: absolute; inset: 0; border-radius: 4.6% / 7.4%;
+  box-shadow: 0 calc(var(--u, .8) * 30px) calc(var(--u, .8) * 80px) rgba(0,0,0,.55), inset 0 0 0 1px rgba(255,255,255,.18);
+  transform: translateZ(-1px);
+}
+.sheen {
+  position: absolute; inset: 0; pointer-events: none; border-radius: 4.6% / 7.4%;
+  transform: translateZ(calc(var(--u, .8) * 230px * var(--pop))) scale(calc(1 - 230 * var(--pop) / 1600));
+  background: radial-gradient(50% 60% at var(--sx, 30%) var(--sy, 20%), rgba(255,255,255,.14), rgba(255,255,255,0) 70%);
+  opacity: var(--pop);
+}
+.nav {
+  position: absolute; top: 50%; z-index: 5; width: 44px; height: 44px; margin-top: -22px; padding: 0;
+  border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: var(--label);
+}
+.nav:disabled { opacity: .3; cursor: default; }
+.nav.prev { left: max(16px, env(safe-area-inset-left, 0px)); }
+.nav.next { right: max(16px, env(safe-area-inset-right, 0px)); }
+.nav svg { width: 17px; height: 17px; }
+
+/* platter */
+.platter {
+  max-width: 980px; width: 100%; margin-inline: auto; box-sizing: border-box;
+  border-radius: 26px; padding: 18px 22px 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 6px 28px;
+}
+.platter > * { min-width: 0; transition: opacity .3s ease, transform .3s ease; }
+.platter.swap .fade { opacity: 0; transform: translateY(4px); }
+.eyebrow { font: 600 12px/1.3 var(--sf); color: var(--label-2); text-transform: uppercase; letter-spacing: .04em; }
+.name { margin: 2px 0 4px; font: 700 clamp(26px, 3.2vw, 34px)/1.12 var(--sf-display); letter-spacing: -.025em; text-wrap: balance; }
+.sub { font-size: 15px; color: var(--label-2); }
+.rows { display: grid; gap: 0; margin: 0; border-radius: 12px; overflow: hidden; background: var(--fill); }
+.rows div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 14px; border-bottom: .5px solid var(--separator); }
+.rows div:last-child { border-bottom: 0; }
+.rows dt { color: var(--label-2); font-size: 15px; }
+.rows dd { margin: 0; font-size: 15px; text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.fact { margin: 10px 0 0; font-size: 15px; line-height: 1.45; color: rgba(255,255,255,.86); max-width: 62ch; }
+.foot { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-top: 10px; margin-top: 6px; border-top: .5px solid var(--separator); }
+.credit { font-size: 11px; color: var(--label-3); min-width: 0; }
+.credit a { color: var(--label-2); text-decoration: none; }
+.credit a:hover { text-decoration: underline; }
+.pager { display: flex; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 14px; background: rgba(0,0,0,.25); }
+.dot { width: 22px; height: 22px; padding: 0; border: 0; background: none; display: grid; place-items: center; cursor: pointer; }
+.dot span { width: 7px; height: 7px; border-radius: 4px; background: rgba(255,255,255,.35); transition: width .35s cubic-bezier(.2,.8,.2,1), background .35s; }
+.dot[aria-current="true"] { width: 34px; }
+.dot[aria-current="true"] span { width: 22px; background: #fff; }
+.hint { font-size: 12px; color: var(--label-3); }
+
+/* pins on the card */
+.pins circle { fill: rgba(255,255,255,.94); stroke: rgba(0,0,0,.18); stroke-width: 1; }
+.pins text { font: 700 26px var(--sf); fill: #000; }
+.pins .ring { fill: none; stroke: rgba(255,255,255,.55); stroke-width: 2; }
+.stage.no-pins .pins, .card:not(.is-active) .pins { opacity: 0; pointer-events: none; }
+.card:not(.is-active) .pins .pin-hit { pointer-events: none; }
+.pins { transition: opacity .3s; }
+.platter .more { margin-top: 12px; text-decoration: none; width: fit-content; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* story */
+.story { max-width: 1080px; margin: 0 auto; box-sizing: border-box;
+  padding: 72px max(16px, env(safe-area-inset-right, 0px)) 96px max(16px, env(safe-area-inset-left, 0px));
+  display: grid; gap: 72px; }
+.story section { display: grid; gap: 22px; min-width: 0; }
+.kicker { font: 600 13px/1.3 var(--sf); color: var(--label-2); text-transform: uppercase; letter-spacing: .06em; }
+.story h2 { margin: 0; font: 700 clamp(30px, 4.4vw, 48px)/1.06 var(--sf-display); letter-spacing: -.03em; text-wrap: balance; }
+.story h3 { margin: 0; font: 700 clamp(22px, 2.6vw, 28px)/1.15 var(--sf-display); letter-spacing: -.02em; text-wrap: balance; }
+.story h4 { margin: 0 0 4px; font: 600 15px/1.3 var(--sf); }
+.lead { margin: 0; font: 500 clamp(19px, 2vw, 23px)/1.4 var(--sf-display); color: rgba(255,255,255,.88); max-width: 60ch; letter-spacing: -.015em; }
+.body { margin: 0; font-size: 16px; line-height: 1.55; color: rgba(255,255,255,.8); max-width: 62ch; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 600 13px/1 var(--sf); padding: 8px 12px; border-radius: 999px; background: var(--fill); color: var(--label); }
+.chip.style { background: var(--tint); }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.tile { border-radius: 20px; padding: 16px 18px; min-width: 0; }
+.tile .k { font-size: 13px; color: var(--label-2); }
+.tile .v { margin-top: 4px; font: 700 clamp(20px, 2.2vw, 26px)/1.15 var(--sf-display); letter-spacing: -.02em; overflow-wrap: anywhere; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.panel { border-radius: 24px; padding: 20px; min-width: 0; }
+.panel + .panel { margin-top: 0; }
+.stack { display: grid; gap: 18px; min-width: 0; }
+.stack p { margin: 0; font-size: 15px; line-height: 1.55; color: rgba(255,255,255,.8); }
+.diagram svg { width: 100%; height: auto; display: block; }
+.diagram .cap { margin: 10px 0 0; font-size: 12px; color: var(--label-3); }
+.d-ring { fill: none; stroke: rgba(255,255,255,.18); }
+.d-tick { stroke: rgba(255,255,255,.3); }
+.d-label { font: 600 11px var(--sf); fill: rgba(235,235,245,.62); }
+.d-n { font: 700 14px var(--sf); fill: #fff; }
+.d-wind { stroke: #64d2ff; stroke-width: 3; fill: none; }
+.d-windhead { fill: #64d2ff; }
+.d-sun { stroke: #ffd60a; stroke-width: 2; fill: none; stroke-dasharray: 4 5; }
+.d-sundot { fill: #ffd60a; }
+.d-bld { fill: rgba(255,255,255,.88); }
+.d-bld2 { fill: rgba(255,255,255,.55); }
+.d-water { fill: rgba(10,132,255,.35); }
+.d-green { fill: rgba(48,209,88,.28); }
+.d-road { fill: rgba(255,255,255,.12); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--label-2); }
+.legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.figure { position: relative; width: 100%; max-width: 100%; aspect-ratio: 1000 / 625; border-radius: 22px; overflow: hidden; background: #111; }
+.figure img { position: absolute; left: 0; width: 100%; }
+.figure .pin {
+  position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%;
+  background: #fff; color: #000; font: 700 14px/30px var(--sf); text-align: center;
+  box-shadow: 0 0 0 4px rgba(255,255,255,.35), 0 4px 14px rgba(0,0,0,.4); transition: transform .25s, box-shadow .25s;
+}
+.figure .pin.hot { transform: scale(1.25); box-shadow: 0 0 0 7px rgba(10,132,255,.6), 0 4px 14px rgba(0,0,0,.4); }
+.decisions { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.decisions li { border-radius: 20px; padding: 16px 18px 16px 58px; position: relative; min-width: 0; }
+.decisions li b { position: absolute; left: 16px; top: 15px; width: 28px; height: 28px; border-radius: 50%; background: #fff; color: #000; font: 700 13px/28px var(--sf); text-align: center; }
+.decisions li b.off { background: var(--fill); color: var(--label); }
+.decisions p { margin: 0; font-size: 15px; line-height: 1.5; color: rgba(255,255,255,.78); }
+.era svg, .gantt svg { width: 100%; height: auto; display: block; }
+.era-t { font: 600 11px var(--sf); fill: rgba(235,235,245,.62); }
+.era-b { font: 600 12px var(--sf); fill: #fff; }
+.tl { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(150px, 1fr); gap: 0; overflow-x: auto; padding-bottom: 6px; }
+.tl li { position: relative; padding: 26px 16px 0 0; min-width: 0; }
+.tl li::before { content: ""; position: absolute; left: 0; right: 0; top: 8px; height: 2px; background: var(--separator); }
+.tl li::after { content: ""; position: absolute; left: 0; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--label-2); }
+.tl li.key::after { background: var(--tint); box-shadow: 0 0 0 4px rgba(10,132,255,.3); }
+.tl .y { font: 700 20px/1.2 var(--sf-display); font-variant-numeric: tabular-nums; }
+.tl .e { font-size: 14px; color: var(--label-2); margin-top: 2px; }
+.mats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.mats div { border-radius: 18px; padding: 14px 16px; font-size: 15px; font-weight: 600; min-width: 0; }
+.mats span { display: block; font-size: 12px; font-weight: 500; color: var(--label-3); margin-bottom: 4px; }
+.nextup { display: flex; justify-content: center; }
+.gantt .g-name { font: 600 12px var(--sf); fill: #fff; }
+.gantt .g-axis { font: 500 11px var(--sf); fill: rgba(235,235,245,.5); }
+.gantt rect.g-bar { rx: 5; }
+.gantt .g-row.cur .g-name { fill: #64d2ff; }
+
+/* clickable pins + callout */
+.pins .pin-hit { pointer-events: auto; cursor: pointer; }
+.pins .pin-hit:hover circle:not(.ring), .pins .pin-hit.on circle:not(.ring) { fill: #0a84ff; }
+.pins .pin-hit:hover text, .pins .pin-hit.on text { fill: #fff; }
+.pins .pin-hit.on .ring { stroke: #0a84ff; stroke-width: 4; }
+.callout {
+  position: absolute; z-index: 6; left: 50%; bottom: 12px; transform: translateX(-50%);
+  width: min(460px, calc(100% - 32px)); box-sizing: border-box; border-radius: 22px; padding: 14px 16px 12px;
+  background: rgba(28, 28, 32, .78);
+}
+.callout p { margin: 6px 0 12px; font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.86); }
+.co-top { display: flex; align-items: center; gap: 10px; }
+.co-top b { flex: none; width: 26px; height: 26px; border-radius: 50%; background: #0a84ff; font: 700 13px/26px var(--sf); text-align: center; }
+.co-top h3 { margin: 0; flex: 1; min-width: 0; font: 700 17px/1.25 var(--sf-display); letter-spacing: -.01em; }
+.co-x { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 0; background: var(--fill); color: #fff; cursor: pointer; font-size: 13px; }
+.co-act { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.co-act .capsule { height: 30px; font-size: 12px; padding: 0 12px; }
+.co-nav { margin-left: auto; display: flex; gap: 6px; }
+.co-nav .capsule { width: 30px; padding: 0; justify-content: center; font-size: 16px; }
+.co-nav .capsule:disabled { opacity: .35; cursor: default; }
+.chiprow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.chiprow > span:first-child { font: 600 12px var(--sf); color: var(--label-2); text-transform: uppercase; letter-spacing: .04em; }
+#chips { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.nchip { width: 30px; height: 30px; border-radius: 50%; border: 0; background: #fff; color: #000; font: 700 13px var(--sf); cursor: pointer; }
+.nchip[aria-pressed="true"], .nchip:hover { background: #0a84ff; color: #fff; }
+.more-row { margin-left: auto; display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.more-row a { text-decoration: none; }
+
+/* story navigation + digest helpers */
+.snav {
+  position: sticky; top: max(10px, env(safe-area-inset-top, 0px)); z-index: 8;
+  display: flex; gap: 4px; overflow-x: auto; padding: 6px; border-radius: 999px; scrollbar-width: none;
+  background: rgba(28, 28, 32, .72);
+}
+.snav::-webkit-scrollbar { display: none; }
+.snav button { flex: none; height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: transparent; color: var(--label); font: 600 13px var(--sf); cursor: pointer; }
+.snav button:hover, .snav button.on { background: rgba(255,255,255,.16); }
+.story section { scroll-margin-top: 72px; }
+.takeaways { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.takeaways div { border-radius: 20px; padding: 14px 16px; font: 600 16px/1.35 var(--sf-display); min-width: 0; }
+.takeaways span { display: block; margin-bottom: 4px; font: 600 12px var(--sf); color: var(--label-2); text-transform: uppercase; letter-spacing: .04em; }
+.rel { margin-top: 10px; padding: 0; border: 0; background: none; color: #64d2ff; font: 600 13px var(--sf); cursor: pointer; }
+.rel:hover { text-decoration: underline; }
+.srcs { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
+.srcs a { color: #64d2ff; text-decoration: none; overflow-wrap: anywhere; }
+.srcs a:hover { text-decoration: underline; }
+.flash { animation: flash 1.6s ease; }
+@keyframes flash { 0%, 60% { box-shadow: 0 0 0 3px #0a84ff; } 100% { box-shadow: 0 0 0 3px transparent; } }
+.decisions li { scroll-margin-top: 80px; }
+
+/* circulation plans */
+.pswipe { display: none; margin: 8px 0 0; font-size: 12px; color: var(--label-3); }
+@media (max-width: 600px) {
+  .pscroll { overflow-x: auto; margin-inline: -8px; padding-inline: 8px; }
+  .pscroll svg { min-width: 600px; }
+  .pswipe { display: block; }
+}
+.circ { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+.plan svg { width: 100%; height: auto; display: block; }
+.plan .cap { margin: 10px 0 0; font-size: 12px; color: var(--label-3); }
+.plan .legend { margin-top: 12px; }
+.c-room { fill: rgba(255,255,255,.1); stroke: rgba(255,255,255,.55); stroke-width: 1.5; }
+.c-upper { fill: rgba(100,210,255,.08); stroke: #64d2ff; stroke-dasharray: 6 4; }
+.c-terr { fill: rgba(255,255,255,.05); stroke-dasharray: 3 3; }
+.c-core { fill: rgba(255,255,255,.28); stroke: rgba(255,255,255,.7); }
+.c-podium { fill: rgba(255,255,255,.06); stroke: rgba(255,255,255,.25); }
+.c-water { fill: rgba(10,132,255,.22); }
+.c-green { fill: rgba(48,209,88,.12); }
+.c-road { fill: rgba(255,255,255,.07); }
+.c-dark { fill: #050507; stroke: rgba(255,255,255,.3); }
+.c-steps { fill: rgba(255,255,255,.16); stroke: rgba(255,255,255,.3); stroke-dasharray: 2 4; }
+.c-under { fill: none; stroke: #ffd60a; stroke-dasharray: 4 4; }
+.c-inset { fill: rgba(0,0,0,.35); stroke: rgba(255,255,255,.2); }
+.c-v { fill: #fff; }
+.c-in { fill: #30d158; }
+.c-t { font: 600 13px var(--sf); fill: #fff; }
+.c-t2 { font: 500 11px var(--sf); fill: rgba(235,235,245,.7); }
+.c-route, .c-route2 { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.c-route { stroke: #0a84ff; stroke-width: 5; stroke-dasharray: 12 8; animation: flow 1.1s linear infinite; }
+.c-route.c-up { stroke: #64d2ff; }
+.c-route2 { stroke: rgba(255,255,255,.6); stroke-width: 3; stroke-dasharray: 5 6; animation: flow 1.6s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -20; } }
+.c-dot { fill: #fff; stroke: #0a84ff; stroke-width: 3; }
+.c-dn { font: 700 12px var(--sf); fill: #000; }
+.walk { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.walk li { position: relative; padding-left: 38px; font-size: 15px; line-height: 1.45; color: rgba(255,255,255,.86); min-height: 26px; }
+.walk b { position: absolute; left: 0; top: -1px; width: 26px; height: 26px; border-radius: 50%; background: #fff; color: #000; font: 700 12px/26px var(--sf); text-align: center; box-shadow: 0 0 0 3px #0a84ff; }
+.stack .panel p { margin: 0; }
+.sketch { background: rgba(255, 214, 10, .12); }
+@media (prefers-reduced-motion: reduce) { .c-route, .c-route2 { animation: none; } }
+
+@media (max-width: 860px) {
+  .takeaways { grid-template-columns: 1fr; }
+  .circ { grid-template-columns: 1fr; }
+  .tiles, .mats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .split, .decisions { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .app { height: auto; grid-template-rows: auto 58vh auto; }
+  .platter { grid-template-columns: 1fr; padding: 16px; }
+  .nav, .title span, .hint { display: none; }
+  .note { text-align: left; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .platter > *, .wallpaper img { transition-duration: .01s !important; }
+}
+</style>
+
+<div class="wallpaper" id="wallpaper" aria-hidden="true"></div>
+<div class="app">
+  <header class="toolbar">
+    <div class="title">
+      <h1>Spatial Marvels</h1>
+      <span>Seven buildings of the 20th century</span>
+    </div>
+    <div class="controls">
+      <span class="status glass"><i></i>Depth from <b id="sourceName">pointer</b></span>
+      <button class="capsule glass" id="camBtn" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <canvas id="camPreview" width="64" height="48" hidden></canvas>
+        <span id="camLabel">Sense lid tilt</span>
+      </button>
+      <button class="capsule glass" id="recenterBtn" type="button" hidden>Recenter</button>
+      <button class="capsule glass" id="pinBtn" type="button" aria-pressed="true">Annotations</button>
+    </div>
+    <p class="note" id="camNote" hidden></p>
+  </header>
+
+  <section class="stage" id="stage" aria-roledescription="carousel" aria-label="Building cards">
+    <button class="nav prev glass" id="prevBtn" type="button" aria-label="Previous building">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <button class="nav next glass" id="nextBtn" type="button" aria-label="Next building">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+  </section>
+
+  <footer class="platter glass" id="platter" aria-live="polite">
+    <div class="fade">
+      <div class="eyebrow" id="eyebrow"></div>
+      <h2 class="name" id="name"></h2>
+      <div class="sub" id="sub"></div>
+      <p class="fact" id="fact"></p>
+      <div class="chiprow"><span>Annotations</span><span id="chips"></span><span class="more-row"><button type="button" class="capsule glass" id="circBtn">Circulation ↓</button><a class="capsule glass" href="#story">Full story ↓</a></span></div>
+    </div>
+    <dl class="rows fade">
+      <div><dt>Completed</dt><dd id="year"></dd></div>
+      <div><dt>Architect</dt><dd id="architect"></dd></div>
+      <div><dt>Location</dt><dd id="coords"></dd></div>
+      <div><dt>Height</dt><dd id="height"></dd></div>
+    </dl>
+    <div class="foot">
+      <div class="credit fade" id="credit"></div>
+      <span class="hint">Swipe left for the next decade</span>
+      <div class="pager" id="pager" role="tablist" aria-label="Choose a building"></div>
+    </div>
+  </footer>
+</div>
+
+<main class="story" id="story" aria-live="polite"></main>
+
+<script>
+(() => {
+  const W = 1000, H = 625;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = (id) => document.getElementById(id);
+
+  /* Each photo is placed in card units (1000 × 625). y shifts the photo up so the
+     building sits where it should; anything above the card top only shows on the
+     building plane, so towers and shells break out of the card.
+     title: where the big year sits behind the building, like the clock on an iPhone Lock Screen.
+     fore: where the foreground strip starts. */
+  const MARVELS = [
+    { key: 'bauhaus', name: 'Bauhaus Building', city: 'Dessau, Germany', year: 1926, architect: 'Walter Gropius', coords: '51.8394° N, 12.2275° E', height: '3–5 storeys',
+      fact: 'Built for the design school that taught a century of designers. The workshop wing hangs a three-storey glass curtain wall in front of its frame, so the structure reads as a skin of light.',
+      img: { w: 1800, h: 1418, y: -96 }, title: { y: 150, x: 230, ink: '#ffffff' }, fore: 560,
+      credit: { by: 'JensKunstfreund', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Au%C3%9Fenansichten_des_Bauhaus-Geb%C3%A4udes_in_Dessau_08.jpg' } },
+    { key: 'fallingwater', name: 'Fallingwater', city: 'Mill Run, Pennsylvania', year: 1939, architect: 'Frank Lloyd Wright', coords: '39.9063° N, 79.4679° W', height: '3 levels over Bear Run',
+      fact: 'Built right over the falls on Bear Run instead of facing them. Concrete terraces cantilever out from a sandstone core quarried on the site.',
+      img: { w: 1800, h: 1182, y: -20 }, title: { y: 150, x: 205, ink: '#ffffff' }, fore: 520,
+      credit: { by: 'lachrimae72', lic: 'CC0', url: 'https://commons.wikimedia.org/wiki/File:Fallingwater3.jpg' } },
+    { key: 'brasilia', name: 'Cathedral of Brasília', city: 'Brasília, Brazil', year: 1970, architect: 'Oscar Niemeyer', coords: '15.7983° S, 47.8756° W', height: '40 m',
+      fact: 'Sixteen curved concrete columns, each about 90 tonnes, meet in a ring and open again like hands raised to the sky. Most of the nave sits below ground.',
+      img: { w: 1800, h: 1200, y: -20 }, title: { y: 160, x: 500, ink: '#ffffff' }, fore: 560,
+      credit: { by: 'Roberto Castro / MTur', lic: 'Public domain', url: 'https://commons.wikimedia.org/wiki/File:Roberto_Castro_Catedral_Metropolitana_de_Nossa_Senhora_Aparecida_Brasilia_DF_(39098957600).jpg' } },
+    { key: 'sydney', name: 'Sydney Opera House', city: 'Sydney, Australia', year: 1973, architect: 'Jørn Utzon', coords: '33.8568° S, 151.2153° E', height: '65 m',
+      fact: 'The shells are cut from the surface of one imaginary sphere, which made them buildable. They are covered in 1,056,006 self-cleaning tiles made in Sweden.',
+      img: { w: 1800, h: 1200, y: -40 }, title: { y: 135, x: 500, ink: '#ffffff' }, fore: 470,
+      credit: { by: 'Dietmar Rabich', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Sydney_(AU),_Opera_House_--_2019_--_2130.jpg' } },
+    { key: 'lotus', name: 'Lotus Temple', city: 'New Delhi, India', year: 1986, architect: 'Fariborz Sahba', coords: '28.5535° N, 77.2588° E', height: '40.8 m',
+      fact: 'Twenty-seven free-standing petals, grouped in threes to form nine sides, clad in white marble from Mount Pentelicus in Greece. Nine pools surround it like leaves.',
+      img: { w: 1800, h: 1200, y: -10 }, title: { y: 165, x: 500, ink: '#ffffff' }, fore: 540,
+      credit: { by: 'A. Savin', lic: 'FAL', url: 'https://commons.wikimedia.org/wiki/File:Lotus_Temple_in_New_Delhi_03-2016.jpg' } },
+    { key: 'bilbao', name: 'Guggenheim Museum Bilbao', city: 'Bilbao, Spain', year: 1997, architect: 'Frank Gehry', coords: '43.2687° N, 2.9340° W', height: 'Atrium 50 m',
+      fact: 'About 33,000 titanium panels, each under half a millimetre thick, wrap curves worked out in aerospace software. The museum turned a port city into a destination.',
+      img: { w: 1800, h: 1125, y: 0 }, title: { y: 150, x: 230, ink: '#ffffff' }, fore: 470,
+      credit: { by: 'José Ligero Loarte', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Museo_Guggenheim_--_2021_--_Bilbao,_Euskadi,_Espa%C3%B1a.jpg' } },
+    { key: 'petronas', name: 'Petronas Twin Towers', city: 'Kuala Lumpur, Malaysia', year: 1998, architect: 'César Pelli', coords: '3.1579° N, 101.7116° E', height: '452 m',
+      fact: 'The world’s tallest buildings from 1998 to 2004. Each floor plan is an eight-pointed star from Islamic geometry, and a skybridge joins the towers at floors 41 and 42.',
+      img: { w: 1800, h: 1711, y: -250 }, title: { y: 200, x: 500, ink: '#ffffff' }, fore: 540,
+      credit: { by: 'Marcin Konsek', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:2016_Kuala_Lumpur,_Petronas_Towers_(26).jpg' } },
+  ];
+
+  /* ---------- the story behind each building ----------
+     pins: [x, y] in card units, matching the photo placement above; null = not visible in the photo.
+     wind: direction the prevailing wind blows FROM, in compass degrees.
+     sun: N = sun arcs through the south sky, S = through the north, EQ = nearly overhead. */
+  const STORY = {
+    bauhaus: {
+      style: 'International Style', span: [1919, 1965], designed: 1925, built: [1925, 1926], client: 'City of Dessau',
+      styleNote: 'Form follows function. Flat roofs, white render, steel and glass, no ornament, and an asymmetric plan you only understand by walking around it.',
+      relatives: 'Villa Savoye (1931), Barcelona Pavilion (1929), Seagram Building (1958)',
+      need: 'In late 1924 the increasingly right-wing state government of Thuringia forced the Bauhaus out of Weimar. Dessau, a fast-growing industrial town and home of the Junkers aircraft works, offered to pay for a new building. The brief was one complex where teaching, workshops and student life could run side by side.',
+      site: 'A greenfield plot on the edge of town, in an area set aside for new housing. A public road ran through the site, so Gropius bridged it: the administration block spans the street and ties the wings together.',
+      climate: 'Temperate and often overcast (Köppen Cfb)', wind: [[240, 'SW to W']], windSrc: 'Leipzig/Halle airport, 50 km away, 2019–2023: winds mostly from the south-west to west, often from the south in winter.', sun: 'N', why: 'A new home for a design school pushed out of Weimar.',
+      response: 'The workshops got three storeys of glass for steady, even daylight. The price was single glazing that overheated in summer and lost heat in winter, a problem later curtain-wall buildings had to solve.',
+      decisions: [
+        ['Glass curtain wall', 'The facade hangs in front of a concrete frame, so the wall carries no load and can be almost all glass. Workshops get light from floor to ceiling, and overheat in summer.', [330, 300], 'site'],
+        ['A corner without a column', 'The frame stops short of the edge, so the glass wraps the corner without a break. Transparency replaces the solid corner.', [592, 250]],
+        ['The building as its own sign', 'The vertical BAUHAUS lettering is built into the facade in a plain sans serif. Typography becomes part of the architecture.', [780, 300]],
+        ['A floating block', 'A recessed, darker basement makes the white volume above seem to hover off the ground.', [300, 575]],
+        ['Three wings, no front', 'Workshops, a vocational school and a block of 28 student studios turn around the bridge like a pinwheel. There is no main facade.', null, 'circulation'],
+      ],
+      materials: [['Structure', 'Reinforced concrete frame'], ['Walls', 'White-rendered infill'], ['Glazing', 'Steel-framed single glass'], ['Roof', 'Flat, usable terraces']],
+      timeline: [[1919, 'Bauhaus founded in Weimar'], [1925, 'School moves to Dessau; building starts'], [1926, 'Opens on 4 December', 1], [1932, 'Closed by the Nazi-led city council'], [1976, 'First major restoration'], [1996, 'UNESCO World Heritage']],
+      plan: 'pinwheel', oriented: false,
+    },
+    fallingwater: {
+      style: 'Organic architecture', span: [1900, 1959], designed: 1935, built: [1936, 1939], client: 'Kaufmann family',
+      styleNote: 'Frank Lloyd Wright believed a building should grow out of its site: local materials, strong horizontals, and rooms that open straight onto nature.',
+      relatives: 'Robie House (1910), Taliesin West (1937), Guggenheim New York (1959)',
+      need: 'Edgar J. Kaufmann Sr., a Pittsburgh department-store owner, wanted a weekend house for his family at their camp on Bear Run. They expected a house with a view of the waterfall they loved. Wright put it on top of the falls instead, so they would live with the water rather than look at it.',
+      site: 'A wooded rural valley in the Laurel Highlands of western Pennsylvania, far from any town grid. There was no urban zoning to answer to. The real constraints were the rock ledges and the stream, and the house is anchored to the boulders beside the falls.',
+      climate: 'Humid continental, cold snowy winters (Köppen Dfb)', wind: [[210, 'SSW to SW']], windSrc: 'Latrobe airport, about 40 km away, 2019–2023: winds mostly from the south-south-west, calm 43% of the time. The wooded valley shelters the house further.', sun: 'N', why: 'A weekend house for a family who loved a waterfall.',
+      response: 'Deep concrete overhangs shade the glass in summer and let low winter sun in. The stream and forest cool the terraces, and thick stone walls hold warmth.',
+      decisions: [
+        ['Cantilevered terraces', 'Reinforced-concrete trays reach out over the stream with no posts below. They sagged over the decades and were strengthened with post-tensioned steel cables in 2001–02.', [700, 215], 'materials'],
+        ['A stone core', 'Sandstone from a quarry reopened nearby forms the vertical spine and chimney. The terraces balance off it.', [505, 62]],
+        ['Falls under the living room', 'The waterfall runs directly beneath the house, and you hear it in every room.', [770, 370]],
+        ['Glass set into stone', 'Metal window frames painted Cherokee red, set directly into the stone walls, so corners open onto the forest.', [488, 150]],
+        ['The rock left in place', 'The boulder the family used to sit on was kept and breaks through the living-room floor at the hearth.', null],
+      ],
+      materials: [['Structure', 'Reinforced concrete cantilevers'], ['Walls', 'Locally quarried sandstone'], ['Windows', 'Steel, Cherokee red'], ['Finish', 'Ochre-painted concrete']],
+      timeline: [[1934, 'The Kaufmanns meet Wright'], [1935, 'Wright draws the design'], [1936, 'Construction starts'], [1937, 'Family moves in', 1], [1939, 'Guest house completed'], [1963, 'Given to the Western Pennsylvania Conservancy'], [2002, 'Cantilevers reinforced with post-tensioning'], [2019, 'UNESCO World Heritage']],
+      plan: 'stream', oriented: false,
+    },
+    brasilia: {
+      style: 'Brazilian Modernism', span: [1936, 1975], designed: 1958, built: [1958, 1970], client: 'Federal government',
+      styleNote: 'Concrete set free into curves. Niemeyer pushed reinforced concrete toward sculpture, light and flowing, made for a tropical sun.',
+      relatives: 'Palácio da Alvorada (1958), National Congress (1960), Pampulha church (1943)',
+      need: 'Brazil moved its capital from Rio de Janeiro to a new planned city in the interior to open up the centre of the country. The capital needed a cathedral, and Niemeyer was asked for one that felt new, not a copy of European Gothic.',
+      site: 'Lúcio Costa’s Pilot Plan zones Brasília strictly: government buildings along the Monumental Axis, housing in residential superblocks. The cathedral sits on the Monumental Axis beside the Ministries Esplanade, the civic spine of the city.',
+      climate: 'Tropical savanna with a long dry season (Köppen Aw)', wind: [[90, 'E']], windSrc: 'Brasília airport, 2019–2023: winds mostly from the east and east-north-east all year.', sun: 'S', why: 'A cathedral for a brand-new capital.',
+      response: 'A reflecting pool surrounds the cathedral, adding moisture to dry-season air and throwing light onto the glass. Most of the nave sits below ground level, where it stays cooler.',
+      decisions: [
+        ['Sixteen identical columns', 'Curved concrete columns of about 90 tonnes each form a hyperboloid. Repeating one shape made a radical form buildable.', [300, 455]],
+        ['The crown', 'The columns meet in a ring and flare out again above it, reading as hands raised to the sky.', [600, 250]],
+        ['Glass between the ribs', 'The gaps are glazed, so the nave is lit from every side. Marianne Peretti’s stained glass was added in 1990.', [500, 560]],
+        ['Enter through darkness', 'Visitors go down a dim tunnel under the pool and come up into the bright nave.', null, 'circulation'],
+      ],
+      materials: [['Structure', 'Precast concrete columns'], ['Form', 'Hyperboloid of revolution'], ['Skin', 'Glass, stained glass from 1990'], ['Setting', 'Reflecting pool']],
+      timeline: [[1956, 'President Kubitschek orders a new capital'], [1957, 'Lúcio Costa wins the city plan'], [1958, 'Construction begins in September'], [1960, 'Structure done; Brasília inaugurated'], [1970, 'Cathedral dedicated', 1], [1990, 'Stained glass by Marianne Peretti']],
+      plan: 'ring', oriented: false,
+    },
+    sydney: {
+      style: 'Expressionist modernism', span: [1950, 1975], designed: 1957, built: [1959, 1973], client: 'NSW government',
+      styleNote: 'Modernism with feeling. Sculptural forms that read as sails, shells or wings instead of boxes.',
+      relatives: 'TWA Flight Center (1962), Berlin Philharmonie (1963)',
+      need: 'Sydney had no proper venue for opera and large concerts. In 1955 the New South Wales government launched an international competition for a performing arts centre on Bennelong Point, and paid for much of it with a state lottery.',
+      site: 'Bennelong Point, a peninsula in Sydney Harbour that once held a tram depot. Water on three sides, the Royal Botanic Garden to the east and the city to the south. The building is seen from every side, and from above, so it has no back.',
+      climate: 'Humid subtropical, mild winters (Köppen Cfa)', wind: [[45, 'NE sea breeze, summer'], [270, 'W, winter']], windSrc: 'Bureau of Meteorology data via City of Sydney wind studies: north-east sea breezes on summer afternoons, westerlies in winter. Southerly changes also bring strong summer gusts.', sun: 'S', why: 'A growing city with no proper stage for opera.',
+      response: 'The tiles are glazed to be self-cleaning, so rain and salt spray keep them bright. The podium faces the city, and the glass walls at the open ends of the shells face the harbour and the summer sea breeze.',
+      decisions: [
+        ['One sphere, many shells', 'Utzon’s winning sketch had no buildable geometry. In 1961 he found one: every shell is cut from the surface of the same sphere, so the ribs could be precast from shared moulds.', [300, 255]],
+        ['A tiled skin', 'Over a million glossy and matte tiles, laid in chevrons, catch the changing light off the water.', [560, 280]],
+        ['The podium', 'A massive platform lifts the shells above the harbour. Utzon credited the Maya platforms he saw in Mexico in 1949, and the hollow podium hides the backstage spaces.', [330, 372], 'circulation'],
+        ['Glass mouths', 'Folded glass walls close the open ends of the shells and frame the harbour.', [222, 312]],
+        ['The cost of ambition', 'Budgeted at A$7 million, it cost A$102 million. Utzon resigned in 1966, and the interiors were finished by others.', null],
+      ],
+      materials: [['Structure', 'Precast concrete ribs'], ['Roof', '1,056,006 Swedish tiles'], ['Base', 'Granite-clad podium'], ['Glazing', 'Folded glass walls']],
+      timeline: [[1955, 'Competition launched'], [1957, 'Utzon wins'], [1959, 'Construction starts'], [1961, 'The spherical solution'], [1966, 'Utzon resigns'], [1973, 'Opened by Queen Elizabeth II', 1], [2007, 'UNESCO World Heritage']],
+      plan: 'point', oriented: true,
+    },
+    lotus: {
+      style: 'Expressionist modernism', span: [1950, 2000], designed: 1977, built: [1980, 1986], client: 'Bahá’í community',
+      styleNote: 'The building is the symbol. Thin modern shells shape a half-open lotus that people of many faiths recognise.',
+      relatives: 'Sydney Opera House (1973), Bahá’í temple in Santiago (2016)',
+      need: 'Every Bahá’í House of Worship must have nine sides and a central dome, and be open to people of all religions. The temple for the Indian subcontinent needed a form that Hindus, Buddhists, Jains and others would all recognise. The lotus is sacred to many of them.',
+      site: 'A 26.6-acre site at Bahapur in south Delhi, bought in 1954 when it was on the edge of the city. Gardens and nine pools fill the land around the temple and buffer it from a dense, busy neighbourhood.',
+      climate: 'Hot summers and monsoon rain (Köppen Cwa)', wind: [[270, 'W, most of the year'], [90, 'E, monsoon']], windSrc: 'Delhi airport, 2019–2023: westerly winds most of the year, easterly in the monsoon months; calm about a quarter of the time.', sun: 'N', why: 'A temple open to every faith, with nine sides.',
+      response: 'Vents at basement level and at the crown of the dome make the building work as a chimney. Air drawn in passes over the pools, and warm air rises out through the top, so the hall stays comfortable without air conditioning.',
+      decisions: [
+        ['Twenty-seven petals', 'Three rings of nine: entrance petals, outer petals, and inner petals that rise to enclose the hall.', [440, 248]],
+        ['Petals as doors', 'The outer ring curls outward to make nine entrances, one on each side.', [690, 482]],
+        ['Concrete shells, marble skin', 'Each petal is a thin reinforced-concrete shell clad in white marble from Mount Pentelicus, Greece.', [330, 330], 'materials'],
+        ['Nine pools', 'Pools ring the base like a lotus’s leaves floating on water, and incoming air passes over them.', [470, 604], 'site'],
+      ],
+      materials: [['Structure', 'Reinforced concrete shells'], ['Skin', 'Pentelic marble, Greece'], ['Plan', 'Nine sides, central hall'], ['Cooling', 'Pools and stack ventilation']],
+      timeline: [[1954, 'Land bought at Bahapur'], [1976, 'Fariborz Sahba selected as architect'], [1977, 'Design approved; foundation stone laid'], [1980, 'Construction starts in April'], [1986, 'Dedicated on 24 December', 1]],
+      plan: 'nine', oriented: false,
+    },
+    bilbao: {
+      style: 'Deconstructivism', span: [1982, 2010], designed: 1991, built: [1993, 1997], client: 'Basque government',
+      styleNote: 'The box broken open. Fragmented, curving forms that computer design made possible to draw, price and build.',
+      relatives: 'Walt Disney Concert Hall (2003), Dancing House, Prague (1996)',
+      need: 'Bilbao’s shipyards and steel mills were closing and the city was declining. The Basque government paid for a museum that the Guggenheim Foundation would run, betting that a landmark would bring visitors and investment. It worked so well that planners now speak of the Bilbao effect.',
+      site: 'Former docks and industrial land at Abandoibarra, on the south bank of the Nervión where the city grid meets the river. La Salve bridge, a main road into the city, crosses the site, so the building runs under it and ends in a tower on the far side.',
+      climate: 'Mild, rainy Atlantic climate (Köppen Cfb)', wind: [[90, 'E, most frequent'], [305, 'WNW to NW, summer']], windSrc: 'Bilbao airport, 2019–2023: easterly winds most often, north-westerlies in summer. The strongest Atlantic winds come from the north-west.', sun: 'N', why: 'A declining port city betting on a landmark.',
+      response: 'Gehry tested stainless steel, which looked dull under Bilbao’s grey skies. Titanium kept a warm, shifting glow in rain and cloud. The river front faces north, so the curves pick up soft reflected light instead of glare.',
+      decisions: [
+        ['Titanium skin', 'About 33,000 titanium plates, each about 0.4 mm thick, ripple slightly as they are fixed, so the surface flickers like fish scales.', [690, 180], 'site'],
+        ['Under the bridge', 'Instead of avoiding La Salve bridge, the long gallery passes beneath it and ends in a tower beyond, tying road and building together.', [150, 250], 'circulation'],
+        ['The glass flower', 'A 50-metre atrium, topped by a metal flower, lights the galleries that wind around it.', [620, 86]],
+        ['Stone for the boxes', 'Rectangular galleries are clad in Spanish limestone and the curved ones in titanium, so the plan shows on the outside.', [930, 300]],
+        ['Drawn in aerospace software', 'CATIA, a program for designing jets, turned Gehry’s paper models into buildable steel frames and cut panels.', null],
+      ],
+      materials: [['Structure', 'Steel frame'], ['Skin', '~33,000 titanium sheets'], ['Stone', 'Spanish limestone'], ['Glazing', 'Glass curtain walls']],
+      timeline: [[1991, 'Basque government signs with the Guggenheim'], [1991, 'Gehry selected'], [1993, 'Construction starts'], [1997, 'Opens in October', 1]],
+      plan: 'river', oriented: true,
+    },
+    petronas: {
+      style: 'Postmodernism', span: [1975, 2005], designed: 1991, built: [1993, 1998], client: 'Petronas',
+      styleNote: 'Modern skyscraper technology dressed in local and historic references, here the geometry of Islamic art.',
+      relatives: 'Jin Mao Tower (1999), Taipei 101 (2004)',
+      need: 'Malaysia’s national oil company needed a headquarters, and the government wanted a landmark that showed a modern, confident country. Pelli’s design draws on motifs from Islamic art, reflecting the country’s Muslim identity.',
+      site: 'The towers anchor Kuala Lumpur City Centre, a masterplan on the former Selangor Turf Club racecourse. A large share of the land became KLCC Park, designed by Roberto Burle Marx as his only project in Asia, and the Suria KLCC mall fills the podium.',
+      climate: 'Hot and humid all year, heavy rain (Köppen Af)', wind: [[225, 'SW monsoon, May–Sep'], [45, 'NE monsoon, Nov–Mar']], windSrc: 'These are Malaysia’s regional monsoons. At ground level in the city, winds are light and shift often; nearby airports record calm about a third of the time.', sun: 'EQ', why: 'A headquarters announcing a modern Malaysia.',
+      response: 'Stainless-steel sunshades and laminated glass cut solar heat on every floor. The setbacks shed wind as the towers rise, and very deep foundations deal with uneven rock below.',
+      decisions: [
+        ['An eight-pointed star', 'Each floor plan is based on the Rub el Hizb, two overlapping squares, with arcs in the corners. Sixteen columns stand at the star’s inner corners.', [640, 300], 'circulation'],
+        ['The skybridge', 'A 58 m, two-storey bridge at floors 41 and 42, 170 m up. It is not fixed at either end: it slides as the towers sway, on an arch with spherical bearings. It doubles as an escape route.', [512, 470], 'circulation'],
+        ['Tapering setbacks', 'The towers step in as they rise and finish in pinnacles that take them to 452 m.', [395, 20]],
+        ['Concrete, not steel', 'Importing steel was very expensive, so the towers use super-high-strength reinforced concrete: a 23 m square core and a ring of 16 columns.', [380, 350], 'materials'],
+        ['Two builders, one race', 'Each tower had its own contractor, Hazama for Tower 1 and a Samsung-led group for Tower 2.', null],
+        ['Moved for the rock', 'Tests found the site on the edge of a buried cliff, so the towers were moved 61 m. Concrete piles reach 60 to 114 m deep.', null],
+      ],
+      materials: [['Structure', 'High-strength concrete'], ['Skin', 'Stainless steel and glass'], ['Base', 'Raft on piles up to 114 m'], ['Bridge', 'On sliding bearings']],
+      timeline: [[1991, 'Pelli wins the design competition'], [1993, 'Excavation starts in March'], [1996, 'Spires completed'], [1998, 'Ranked world’s tallest building', 1], [1999, 'Officially opened, 31 August'], [2004, 'Taipei 101 takes the title']],
+      plan: 'twins', oriented: false,
+    },
+  };
+
+  /* ---------- diagrams ---------- */
+  const C = 170, R = 132;
+  const polar = (deg, r) => [C + r * Math.sin(deg * Math.PI / 180), C - r * Math.cos(deg * Math.PI / 180)];
+  const star = (cx, cy, r) => {
+    const p = [];
+    for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, rr = i % 2 ? r * .78 : r; p.push(`${(cx + rr * Math.sin(a)).toFixed(1)},${(cy - rr * Math.cos(a)).toFixed(1)}`); }
+    return `<polygon points="${p.join(' ')}" class="d-bld"/>`;
+  };
+  const label = (x, y, t, anchor = 'middle') => `<text class="d-label" x="${x}" y="${y}" text-anchor="${anchor}">${t}</text>`;
+  const PLANS = {
+    pinwheel: () => `<rect x="178" y="40" width="16" height="262" class="d-road"/>${label(186, 318, 'Road')}
+      <rect x="96" y="112" width="68" height="92" class="d-bld"/>${label(130, 104, 'Workshops')}
+      <rect x="150" y="122" width="72" height="18" class="d-bld2"/>${label(186, 156, 'Bridge', 'middle')}
+      <rect x="206" y="98" width="52" height="74" class="d-bld"/>${label(232, 90, 'School')}
+      <rect x="112" y="204" width="22" height="46" class="d-bld2"/>
+      <rect x="98" y="250" width="50" height="24" class="d-bld"/>${label(123, 290, 'Studios')}`,
+    stream: () => `<circle cx="110" cy="100" r="16" class="d-green"/><circle cx="235" cy="95" r="20" class="d-green"/><circle cx="260" cy="240" r="18" class="d-green"/><circle cx="90" cy="240" r="20" class="d-green"/>
+      <path d="M40,214 C100,196 150,226 200,208 S280,196 304,210 L304,232 C270,222 240,240 200,232 S110,222 40,238 Z" class="d-water"/>${label(268, 258, 'Bear Run')}
+      <rect x="168" y="112" width="20" height="56" class="d-bld2"/>
+      <rect x="120" y="140" width="112" height="34" class="d-bld"/>
+      <rect x="150" y="170" width="96" height="44" class="d-bld" opacity=".75"/>${label(196, 130, 'Stone core', 'start')}
+      ${label(198, 280, 'Terraces reach out over the falls')}
+      <rect x="112" y="64" width="34" height="18" class="d-bld2"/>${label(129, 58, 'Guest house')}`,
+    ring: () => { let t = ''; for (let i = 0; i < 16; i++) { const a = i * 22.5, [x1, y1] = polar(a, 42), [x2, y2] = polar(a, 58); t += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-width="5" stroke-linecap="round"/>`; }
+      return `<circle cx="${C}" cy="${C}" r="86" class="d-water"/>${label(C, 74, 'Reflecting pool')}<circle cx="${C}" cy="${C}" r="44" class="d-bld" opacity=".5"/>${t}
+        <rect x="164" y="214" width="12" height="52" fill="#1a1a1e"/>${label(C, 282, 'Ramp entrance')}
+        <rect x="262" y="160" width="10" height="10" class="d-bld"/>${label(267, 184, 'Bell tower')}`; },
+    point: () => `<circle cx="${C}" cy="${C}" r="${R - 6}" class="d-water"/>
+      <path d="M60,300 L60,236 C96,226 130,228 146,214 L150,140 C152,112 162,94 170,90 C178,94 188,112 190,140 L194,214 C214,226 244,226 282,236 L282,300 Z" class="d-road" style="fill:rgba(255,255,255,.14)"/>
+      <ellipse cx="240" cy="256" rx="36" ry="20" class="d-green"/>${label(244, 260, 'Botanic Garden')}
+      <rect x="148" y="176" width="44" height="40" class="d-bld2"/>
+      <ellipse cx="162" cy="150" rx="11" ry="32" class="d-bld"/><ellipse cx="180" cy="156" rx="9" ry="26" class="d-bld"/>
+      ${label(C, 66, 'Harbour')}${label(92, 176, 'Sydney Cove')}${label(250, 176, 'Farm Cove')}${label(C, 292, 'City')}`,
+    nine: () => { let t = ''; for (let i = 0; i < 9; i++) { const a = i * 40, [x, y] = polar(a, 84); t += `<circle cx="${x}" cy="${y}" r="13" class="d-water"/>`; const [p1x, p1y] = polar(a - 14, 30), [p2x, p2y] = polar(a + 14, 30), [tx, ty] = polar(a, 58); t += `<path d="M${p1x},${p1y} Q${tx},${ty} ${p2x},${p2y}" class="d-bld"/>`; }
+      return `<circle cx="${C}" cy="${C}" r="118" class="d-green"/>${t}<circle cx="${C}" cy="${C}" r="32" class="d-bld"/>${label(C, 312, 'Nine petals, nine pools, garden ring')}`; },
+    river: () => { let g = ''; for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) g += `<rect x="${86 + i * 34}" y="${236 + j * 30}" width="24" height="20" class="d-road" style="fill:rgba(255,255,255,.14)"/>`;
+      return `<path d="M30,92 C110,120 210,86 312,118 L312,160 C210,130 110,162 30,134 Z" class="d-water"/>${label(92, 100, 'Nervión river')}
+        <rect x="244" y="50" width="12" height="230" class="d-road" style="fill:rgba(255,255,255,.2)"/>${label(250, 296, 'La Salve bridge')}
+        <path d="M108,168 C120,146 160,150 176,160 C196,146 232,148 238,172 C246,196 220,214 188,210 C160,222 118,214 110,196 Z" class="d-bld"/>
+        <rect x="262" y="164" width="14" height="22" class="d-bld2"/>${label(269, 202, 'Tower')}${g}${label(140, 312, 'City grid')}`; },
+    twins: () => `<ellipse cx="236" cy="240" rx="62" ry="40" class="d-green"/>${label(236, 296, 'KLCC Park')}
+      <rect x="96" y="152" width="148" height="40" class="d-bld2"/>${label(170, 214, 'Mall podium')}
+      ${star(128, 140, 30)}${star(212, 140, 30)}<rect x="152" y="134" width="36" height="10" fill="#64d2ff"/>${label(170, 94, 'Skybridge')}`,
+  };
+  function siteDiagram(s) {
+    let t = `<circle cx="${C}" cy="${C}" r="${R}" class="d-ring"/>`;
+    for (let d = 0; d < 360; d += 15) { const [x1, y1] = polar(d, R), [x2, y2] = polar(d, R - (d % 90 ? 4 : 9)); t += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="d-tick"/>`; }
+    t += `<text class="d-n" x="${C}" y="${C - R - 8}" text-anchor="middle">N</text>`;
+    const sunR = R - 18;
+    if (s.sun === 'EQ') t += `<line x1="${C - sunR}" y1="${C + 6}" x2="${C + sunR}" y2="${C + 6}" class="d-sun"/><circle cx="${C}" cy="${C + 6}" r="6" class="d-sundot"/>`;
+    else {
+      const sweep = s.sun === 'N' ? 1 : 0;
+      t += `<path d="M${C + sunR},${C} A${sunR},${sunR} 0 0 ${sweep} ${C - sunR},${C}" class="d-sun"/>`;
+      const [sx, sy] = polar(s.sun === 'N' ? 180 : 0, sunR);
+      t += `<circle cx="${sx}" cy="${sy}" r="7" class="d-sundot"/>`;
+    }
+    const plan = PLANS[s.plan]();
+    let w = '';
+    s.wind.forEach(([deg], i) => {
+      const [x1, y1] = polar(deg, R + 26), [x2, y2] = polar(deg, R - 26);
+      const [hx1, hy1] = polar(deg + 6, R - 12), [hx2, hy2] = polar(deg - 6, R - 12);
+      w += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="d-wind"${i ? ' stroke-dasharray="6 5"' : ''}/><polygon points="${x2},${y2} ${hx1},${hy1} ${hx2},${hy2}" class="d-windhead"/>`;
+    });
+    return `<svg viewBox="-20 -20 380 380" role="img" aria-label="Site diagram with north, prevailing wind and sun path">${t}${plan}${w}</svg>`;
+  }
+  function eraBar(s, year) {
+    const x = (y) => 20 + (y - 1900) / 110 * 560;
+    let t = '';
+    for (let y = 1900; y <= 2010; y += 20) t += `<line x1="${x(y)}" y1="40" x2="${x(y)}" y2="46" stroke="rgba(255,255,255,.3)"/><text class="era-t" x="${x(y)}" y="62" text-anchor="middle">${y}</text>`;
+    return `<svg viewBox="0 0 600 70" role="img" aria-label="${s.style}, about ${s.span[0]} to ${s.span[1]}">
+      <rect x="20" y="40" width="560" height="2" fill="rgba(255,255,255,.18)"/>
+      <rect x="${x(s.span[0])}" y="20" width="${x(s.span[1]) - x(s.span[0])}" height="16" rx="8" fill="rgba(10,132,255,.55)"/>
+      <text class="era-b" x="${x(s.span[0]) + 10}" y="32">${s.style}</text>
+      <line x1="${x(year)}" y1="10" x2="${x(year)}" y2="46" stroke="#fff" stroke-width="2"/><circle cx="${x(year)}" cy="10" r="4" fill="#fff"/>
+      ${t}</svg>`;
+  }
+  function gantt(curKey) {
+    const x = (y) => 170 + (y - 1915) / 95 * 410;
+    let t = '';
+    for (let y = 1920; y <= 2010; y += 10) t += `<line x1="${x(y)}" y1="14" x2="${x(y)}" y2="${14 + MARVELS.length * 30}" stroke="rgba(255,255,255,.08)"/><text class="g-axis" x="${x(y)}" y="${30 + MARVELS.length * 30}" text-anchor="middle">${y}</text>`;
+    MARVELS.forEach((m, i) => {
+      const s = STORY[m.key], y = 22 + i * 30, cur = m.key === curKey;
+      t += `<g class="g-row${cur ? ' cur' : ''}"><text class="g-name" x="160" y="${y + 5}" text-anchor="end">${m.name}</text>
+        <line x1="${x(s.designed)}" y1="${y}" x2="${x(s.built[0])}" y2="${y}" stroke="${cur ? '#64d2ff' : 'rgba(255,255,255,.4)'}" stroke-width="2" stroke-dasharray="3 3"/>
+        <rect class="g-bar" x="${x(s.built[0])}" y="${y - 6}" width="${Math.max(6, x(s.built[1]) - x(s.built[0]))}" height="12" fill="${cur ? '#0a84ff' : 'rgba(255,255,255,.55)'}"/></g>`;
+    });
+    return `<svg viewBox="0 0 600 ${44 + MARVELS.length * 30}" role="img" aria-label="Design and construction periods of all seven buildings">${t}</svg>`;
+  }
+
+  /* ---------- circulation: simplified study plans (600 × 400), not measured drawings ---------- */
+  const rm = (x, y, w, h, t, cls = 'c-room', ty) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" class="${cls}"/>${t ? `<text class="c-t" x="${x + w / 2}" y="${ty ?? y + h / 2 + 4}" text-anchor="middle">${t}</text>` : ''}`;
+  const tx = (x, y, t, a = 'middle') => `<text class="c-t2" x="${x}" y="${y}" text-anchor="${a}">${t}</text>`;
+  const route = (pts, cls = 'c-route') => `<polyline points="${pts.map((p) => p.join(',')).join(' ')}" class="${cls}"/>`;
+  const stair = (x, y) => { let s = `<rect x="${x}" y="${y}" width="26" height="26" rx="3" class="c-v"/>`; for (let i = 1; i < 5; i++) s += `<line x1="${x + 3}" y1="${y + i * 5.2}" x2="${x + 23}" y2="${y + i * 5.2}" stroke="#000" stroke-opacity=".55"/>`; return s; };
+  const lift = (x, y) => `<rect x="${x}" y="${y}" width="22" height="22" rx="3" class="c-v"/><path d="M${x + 5},${y + 9} l6,-5 l6,5 M${x + 5},${y + 13} l6,5 l6,-5" stroke="#000" stroke-width="1.6" fill="none"/>`;
+  const entry = (x, y, rot = 0) => `<g transform="translate(${x},${y}) rotate(${rot})"><polygon points="0,-11 9,5 -9,5" class="c-in"/></g>`;
+  const stepDots = (steps) => steps.map(([x, y], n) => `<circle cx="${x}" cy="${y}" r="11" class="c-dot"/><text class="c-dn" x="${x}" y="${y + 4}" text-anchor="middle">${n + 1}</text>`).join('');
+  const CIRC = {
+    bauhaus: {
+      title: 'A pinwheel tied together by a bridge',
+      draw: () => `<rect x="300" y="0" width="34" height="400" class="c-road"/>${tx(317, 392, 'Road')}
+        ${rm(60, 50, 210, 150, 'Workshop wing')}${rm(370, 40, 170, 110, 'Vocational school')}
+        <rect x="250" y="88" width="140" height="40" rx="6" class="c-room c-upper"/>${tx(320, 82, 'Bridge, upper floors: offices')}
+        ${rm(212, 212, 64, 110, 'Hall', 'c-room', 250)}${tx(244, 270, 'stage')}${tx(244, 288, 'canteen')}
+        ${rm(170, 330, 150, 56, 'Studio block, 28 studios')}
+        ${stair(222, 168)}${stair(286, 340)}${stair(470, 112)}
+        ${route([[317, 236], [282, 200], [253, 181]])}${route([[253, 181], [270, 108], [400, 108], [480, 124]], 'c-route c-up')}
+        ${route([[253, 194], [244, 236], [244, 300], [270, 336]], 'c-route2')}${entry(296, 210, -60)}`,
+      steps: [[318, 236, 'Arrive from the road and enter under the canopy'], [253, 181, 'Main stair hall at the hinge of the wings'], [330, 108, 'Climb to the bridge: offices span the street'], [480, 124, 'Arrive in the vocational school'], [196, 290, 'Or go straight on through hall, stage and canteen to the studios']],
+      lesson: 'Circulation is the organising idea. The bridge crosses the road and holds the offices, so the route between schools is also the place the school is run from.',
+      prompt: 'Redraw the plan as three bubbles and one bridge. Where would the entrance go if the road were not there?',
+    },
+    fallingwater: {
+      title: 'Compression, then release',
+      draw: () => `<path d="M0,318 C120,300 220,340 340,318 S520,300 600,320 L600,372 C500,356 400,380 300,366 S100,352 0,372 Z" class="c-water"/>${tx(560, 394, 'Bear Run', 'end')}
+        <path d="M600,26 L380,26" class="c-road" stroke-width="22" stroke="rgba(255,255,255,.12)" fill="none"/>${tx(590, 54, 'Drive, after crossing Bear Run', 'end')}
+        ${rm(150, 104, 250, 164, 'Living room')}
+        ${rm(270, 44, 40, 60, '', 'c-core')}${tx(290, 38, 'Stone chimney core')}
+        ${rm(330, 50, 50, 54, 'Entry', 'c-room', 46)}
+        ${rm(400, 128, 130, 70, 'East terrace', 'c-room c-terr', 190)}${rm(56, 148, 94, 64, 'West terrace', 'c-room c-terr')}
+        ${rm(230, 268, 54, 46, '', 'c-room c-terr')}${tx(257, 300, 'Hatch')}
+        ${stair(276, 70)}${stair(244, 280)}
+        ${route([[560, 26], [356, 26], [356, 76], [356, 118]])}${route([[356, 118], [300, 170], [465, 163]])}
+        ${route([[300, 190], [257, 270], [257, 330]], 'c-route2')}${route([[290, 104], [290, 60]], 'c-route c-up')}${entry(356, 60, 180)}`,
+      steps: [[470, 26, 'Arrive by the drive behind the house'], [356, 76, 'A low, dark, narrow entry'], [300, 150, 'Release into the wide, bright living room'], [465, 163, 'Out onto the terrace over the falls'], [257, 330, 'Or take the hatch stair down to the water'], [290, 60, 'Stairs lead up to the bedrooms, each with its own terrace']],
+      lesson: 'Wright keeps the entry low and dim so the living room feels vast when you arrive. The route is choreographed: squeeze, open, then out over the water.',
+      prompt: 'Sketch a long section from the drive to the hatch stair. Mark every change in ceiling height and every view you gain.',
+    },
+    brasilia: {
+      title: 'Down into darkness, up into light',
+      draw: () => {
+        let cols = '';
+        for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; cols += `<circle cx="${(230 + 92 * Math.sin(a)).toFixed(1)}" cy="${(170 - 92 * Math.cos(a)).toFixed(1)}" r="7" class="c-v"/>`; }
+        return `<circle cx="230" cy="170" r="150" class="c-water"/>${tx(230, 36, 'Reflecting pool')}
+          <circle cx="230" cy="170" r="92" class="c-room"/>${tx(230, 140, 'Nave, below ground')}${cols}
+          <circle cx="230" cy="176" r="12" class="c-core"/>${tx(230, 204, 'Altar')}
+          <rect x="216" y="262" width="28" height="138" rx="4" class="c-dark"/>${tx(262, 360, 'Dim tunnel, under the pool', 'start')}
+          <ellipse cx="420" cy="250" rx="30" ry="22" class="c-room"/>${tx(420, 286, 'Baptistery')}
+          <rect x="70" y="60" width="16" height="16" class="c-v"/>${tx(78, 92, 'Bell tower')}
+          ${route([[230, 396], [230, 270], [230, 190]])}${route([[300, 200], [392, 240]], 'c-route2')}${entry(230, 390, 0)}
+          <g transform="translate(400,40)"><rect width="190" height="120" rx="12" class="c-inset"/>${tx(95, 18, 'Section')}
+            <line x1="10" y1="56" x2="180" y2="56" stroke="rgba(255,255,255,.45)"/>${tx(176, 50, 'ground', 'end')}
+            <path d="M14,56 L60,82 L150,82" stroke="#0a84ff" stroke-width="3" fill="none"/>
+            <path d="M70,82 C80,52 92,30 100,22 M130,82 C120,52 108,30 100,22" stroke="#fff" stroke-width="3" fill="none"/>
+            <path d="M100,22 l-8,-10 M100,22 l8,-10" stroke="#fff" stroke-width="3"/>
+            <path d="M40,74 l20,8" stroke="#000" stroke-width="8" stroke-opacity=".5"/>${tx(95, 106, 'dim tunnel → bright nave')}</g>`;
+      },
+      steps: [[230, 380, 'Cross the open plaza in full sun'], [230, 320, 'Walk down a dim tunnel beneath the pool'], [230, 220, 'Rise into the nave, lit from all sides'], [346, 220, 'The baptistery is reached from the nave, or by a spiral stair from the plaza']],
+      lesson: 'Light is the destination. The route goes down into darkness on purpose, so arriving in the bright nave feels like a release.',
+      prompt: 'Draw the ramp and nave in section. How long should the dark stretch be before the light means something?',
+    },
+    sydney: {
+      title: 'People on top, everything else inside the podium',
+      draw: () => `<rect x="0" y="0" width="600" height="400" class="c-water"/>${tx(300, 22, 'Harbour, north')}
+        <path d="M120,60 L480,60 L520,330 L80,330 Z" class="c-podium"/>
+        ${rm(130, 120, 150, 170, 'Concert Hall')}${rm(320, 136, 140, 154, 'Joan Sutherland Theatre', 'c-room', 200)}
+        ${rm(130, 70, 150, 46, 'North foyer', 'c-room c-terr', 86)}${rm(320, 86, 140, 46, 'North foyer', 'c-room c-terr', 102)}
+        <rect x="150" y="296" width="300" height="34" class="c-steps"/>${tx(300, 318, 'Monumental Steps')}
+        <rect x="190" y="340" width="220" height="44" rx="6" class="c-road"/>${tx(196, 398, 'Forecourt, from the city', 'start')}
+        <rect x="190" y="300" width="220" height="26" rx="4" class="c-under"/>
+        ${route([[300, 376], [300, 300], [205, 260], [205, 94]])}${route([[300, 300], [390, 260], [390, 108]])}
+        ${route([[560, 380], [440, 314], [190, 314]], 'c-route2')}${tx(590, 398, 'Covered drive beneath the steps', 'end')}${entry(300, 384, 0)}`,
+      steps: [[300, 370, 'Cross the forecourt from the city'], [300, 306, 'Climb the Monumental Steps'], [205, 230, 'Enter either hall from the podium'], [205, 104, 'At interval, the foyers open to the harbour'], [470, 330, 'Vehicles use the covered drive beneath the steps; services stay inside the podium']],
+      lesson: 'Utzon split movement by level. The public ceremony happens on top of the podium; vehicles, stage machinery and services live inside it, out of sight.',
+      prompt: 'Draw the podium in section and trace three people: a ticket holder, a performer and a delivery driver. Where do their routes cross?',
+    },
+    lotus: {
+      title: 'Nine doors, no back',
+      draw: () => {
+        let s = '', pools = '';
+        for (let i = 0; i < 9; i++) {
+          const a = i * 40 * Math.PI / 180, x1 = 300 + 168 * Math.sin(a), y1 = 200 - 168 * Math.cos(a), x2 = 300 + 92 * Math.sin(a), y2 = 200 - 92 * Math.cos(a);
+          s += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="c-route2"/>`;
+          const b = (i * 40 + 20) * Math.PI / 180;
+          pools += `<circle cx="${(300 + 135 * Math.sin(b)).toFixed(1)}" cy="${(200 - 135 * Math.cos(b)).toFixed(1)}" r="26" class="c-water"/>`;
+        }
+        let nona = []; for (let i = 0; i < 9; i++) { const a = i * 40 * Math.PI / 180; nona.push(`${(300 + 86 * Math.sin(a)).toFixed(1)},${(200 - 86 * Math.cos(a)).toFixed(1)}`); }
+        return `<circle cx="300" cy="200" r="190" class="c-green"/>${pools}
+          <circle cx="300" cy="200" r="108" class="c-podium"/>${tx(392, 112, 'Walkway ring', 'start')}
+          <polygon points="${nona.join(' ')}" class="c-room"/>${tx(300, 196, 'Central hall')}${tx(300, 212, 'under the dome')}
+          ${s}${route([[300, 400], [300, 300], [300, 286]])}${route([[300, 286], [300, 230]])}${entry(300, 392, 0)}`;
+      },
+      steps: [[300, 380, 'Walk in along the garden path'], [300, 324, 'Climb to the raised walkway between the pools'], [300, 286, 'Enter through any of nine petal doors'], [300, 246, 'Arrive in the single central hall']],
+      lesson: 'Radial symmetry makes every side an entrance. There is no back door and no ranking of arrival, which fits a temple open to every faith.',
+      prompt: 'Plan the walk from the gate. How do the pools steer you to a door without a single wall?',
+    },
+    bilbao: {
+      title: 'Step down from the city, then orbit the atrium',
+      draw: () => `<path d="M0,0 L600,0 L600,56 C420,74 200,40 0,62 Z" class="c-water"/>${tx(80, 30, 'Nervión river')}
+        <rect x="0" y="62" width="600" height="18" class="c-road"/>${tx(450, 76, 'Riverside walk', 'end')}
+        <rect x="470" y="0" width="34" height="400" class="c-road"/>${tx(487, 392, 'La Salve bridge')}
+        ${rm(70, 150, 120, 110, 'Rectangular galleries', 'c-room', 176)}
+        <path d="M200,110 C230,90 300,96 320,120 C346,150 330,240 300,262 C270,282 220,270 204,240 C186,206 180,130 200,110 Z" class="c-room"/>${tx(262, 190, 'Atrium, 50 m high')}
+        <path d="M320,140 C380,120 470,124 560,140 L560,190 C470,200 380,196 326,190 Z" class="c-room c-terr"/>${tx(440, 164, '130 m gallery runs under the bridge')}
+        <path d="M120,100 C150,84 190,90 200,110 L190,150 L120,150 Z" class="c-room c-terr"/>
+        ${rm(530, 96, 40, 40, '', 'c-core')}${tx(550, 90, 'Tower')}
+        <rect x="200" y="300" width="120" height="50" rx="4" class="c-steps"/>${tx(326, 330, 'Steps down', 'start')}
+        <rect x="120" y="356" width="330" height="40" rx="6" class="c-road"/>${tx(284, 382, 'City street, higher level', 'start')}
+        ${lift(250, 214)}${stair(282, 228)}
+        ${route([[260, 390], [260, 300], [260, 262], [262, 220]])}${route([[262, 205], [200, 205], [130, 205]], 'c-route c-up')}${route([[300, 170], [440, 168], [540, 168]], 'c-route c-up')}
+        ${route([[20, 72], [580, 72]], 'c-route2')}${entry(260, 296, 0)}`,
+      steps: [[260, 380, 'Leave the city street'], [260, 318, 'Descend a broad flight of steps: the riverside sits about 16 m below the city'], [262, 236, 'Enter the tall atrium, the hub of the museum'], [150, 205, 'Glass lifts, stairs and curved catwalks reach each gallery'], [520, 168, 'The long gallery slides under La Salve bridge']],
+      lesson: 'Gehry used the drop from the city to the river. You descend to a modest door, then the atrium opens upward and every gallery is reached from it, so you never get lost.',
+      prompt: 'Trace the atrium’s catwalks and lifts. Which galleries can you visit in one loop without retracing your steps?',
+    },
+    petronas: {
+      title: 'Vertical zoning: express up, local across',
+      draw: () => {
+        const st = []; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, r = i % 2 ? 128 : 160; st.push(`${(180 + r * Math.sin(a)).toFixed(1)},${(200 - r * Math.cos(a)).toFixed(1)}`); }
+        let cols = ''; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8 + Math.PI / 16; cols += `<circle cx="${(180 + 118 * Math.sin(a)).toFixed(1)}" cy="${(200 - 118 * Math.cos(a)).toFixed(1)}" r="6" class="c-v"/>`; }
+        let lifts = ''; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) lifts += lift(146 + i * 24, 166 + j * 24);
+        const tw = (x) => `<path d="M${x},380 L${x},150 L${x + 6},120 L${x + 12},90 L${x + 18},70 L${x + 22},40 L${x + 25},14 L${x + 28},40 L${x + 32},70 L${x + 38},90 L${x + 44},120 L${x + 50},150 L${x + 50},380 Z" class="c-room"/>`;
+        return `<polygon points="${st.join(' ')}" class="c-room"/>${tx(180, 64, 'Typical office floor')}
+          <rect x="132" y="152" width="96" height="96" rx="6" class="c-core"/>${lifts}${cols}
+          ${tx(180, 268, 'Core: lifts, stairs, services')}${tx(180, 332, 'Open office ring, 16 perimeter columns')}
+          ${tw(400)}${tw(520)}
+          <rect x="450" y="232" width="70" height="10" fill="#64d2ff"/>${tx(485, 226, 'Skybridge 41–42')}
+          <rect x="370" y="372" width="230" height="20" rx="4" class="c-podium"/>${tx(485, 398, 'Podium and mall')}
+          ${route([[425, 380], [425, 240]], 'c-route c-up')}${route([[425, 240], [425, 130]], 'c-route2')}${route([[440, 237], [530, 237], [545, 237]], 'c-route')}
+          ${tx(392, 310, 'Express', 'end')}${tx(392, 324, 'double-deck', 'end')}${tx(392, 180, 'Local', 'end')}${entry(425, 386, 0)}`;
+      },
+      steps: [[425, 366, 'Enter the tower lobby from the podium'], [446, 300, 'Ride a double-deck lift'], [425, 240, 'Change lifts at floors 41–42, the skybridge level'], [425, 160, 'Local lifts serve the upper floors'], [520, 237, 'Or cross the skybridge to the other tower']],
+      lesson: 'In a supertall tower, circulation is zoning. Express lifts to a sky lobby, then local lifts above, keep the core small enough to leave a usable office ring on every floor.',
+      prompt: 'Estimate what share of a typical floor the core takes. What would happen to it if every lift stopped at every floor?',
+    },
+  };
+  function circulation(key) {
+    const c = CIRC[key];
+    return `<section id="s-circulation">
+        <div class="kicker">Circulation</div>
+        <h3>${c.title}</h3>
+        <div class="split circ">
+          <div class="panel glass plan"><div class="pscroll"><svg viewBox="-10 -10 620 420" role="img" aria-label="Simplified plan showing how people move through the building">${c.draw()}${stepDots(c.steps)}</svg></div><p class="pswipe">Swipe the plan sideways to see all of it.</p>
+            <div class="legend"><span><i style="background:#0a84ff"></i>Main route</span><span><i style="background:#64d2ff"></i>Up a level</span><span><i style="background:rgba(255,255,255,.6)"></i>Other routes</span><span><i style="background:#30d158;height:8px;width:8px;border-radius:2px"></i>Entry</span><span><i style="background:#fff;height:8px;width:8px;border-radius:2px"></i>Stairs and lifts</span></div>
+            <p class="cap">Simplified study diagram, redrawn and not to scale. Check details against the published plans.</p>
+          </div>
+          <div class="stack">
+            <ol class="walk">${c.steps.map((s, n) => `<li><b>${n + 1}</b>${s[2]}</li>`).join('')}</ol>
+            <div class="panel glass"><h4>The lesson</h4><p>${c.lesson}</p></div>
+            <div class="panel glass sketch"><h4>Sketch this</h4><p>${c.prompt}</p></div>
+          </div>
+        </div>
+      </section>`;
+  }
+
+  function renderStory(i) {
+    const m = MARVELS[i], s = STORY[m.key];
+    const yrs = s.built[1] - s.built[0];
+    const ih = (1000 * m.img.h / m.img.w) / 6.25;
+    const pinned = s.decisions.map((d, n) => [d, n]).filter(([d]) => d[2]);
+    const next = MARVELS[i + 1];
+    const lessonOne = CIRC[m.key].lesson.split('. ')[0] + '.';
+    const nav = [['s-overview', 'Overview'], ['s-circulation', 'Circulation'], ['s-site', 'Site & climate'], ['s-decisions', 'Decisions'], ['s-style', 'Style'], ['s-materials', 'Materials'], ['s-timeline', 'Timeline'], ['s-sources', 'Sources']];
+    $('story').innerHTML = `
+      <nav class="snav glass" aria-label="Story sections">${nav.map(([id, t]) => `<button type="button" data-go="${id}">${t}</button>`).join('')}</nav>
+      <section id="s-overview">
+        <div class="kicker">The story · ${m.city}</div>
+        <h2>${m.name}</h2>
+        <div class="takeaways">
+          <div class="glass"><span>Why it exists</span>${s.why}</div>
+          <div class="glass"><span>The big idea</span>${s.decisions[0][0]}</div>
+          <div class="glass"><span>Lesson for your work</span>${lessonOne}</div>
+        </div>
+        <p class="lead">${s.need}</p>
+        <div class="chips"><span class="chip style">${s.style}</span><span class="chip">${m.architect}</span><span class="chip">${s.climate.split(' (')[0]}</span></div>
+      </section>
+      <section>
+        <div class="tiles">
+          <div class="tile glass"><div class="k">Completed</div><div class="v">${m.year}</div></div>
+          <div class="tile glass"><div class="k">Construction</div><div class="v">${yrs <= 1 ? 'About 1 year' : yrs + ' years'}</div></div>
+          <div class="tile glass"><div class="k">Height</div><div class="v">${m.height}</div></div>
+          <div class="tile glass"><div class="k">Client</div><div class="v">${s.client}</div></div>
+        </div>
+      </section>
+      ${circulation(m.key)}
+      <section id="s-site">
+        <div class="kicker">Site, zoning and climate</div>
+        <h3>Where it stands, and what it answers to</h3>
+        <div class="split">
+          <div class="panel glass diagram">${siteDiagram(s)}
+            <div class="legend"><span><i style="background:#64d2ff"></i>Prevailing wind: ${s.wind.map((w) => w[1]).join(' and ')}</span><span><i style="background:#ffd60a"></i>Sun path</span></div>
+            <p class="cap">Plan diagram, not to scale. ${s.oriented ? 'Oriented with north up.' : 'Building orientation is schematic.'} Wind: ${s.windSrc}</p>
+          </div>
+          <div class="stack">
+            <div><h4>Location and zoning</h4><p>${s.site}</p></div>
+            <div><h4>Climate · ${s.climate}</h4><p>${s.response}</p></div>
+            <div><h4>Coordinates</h4><p>${m.coords}</p></div>
+          </div>
+        </div>
+      </section>
+      <section id="s-decisions">
+        <div class="kicker">Design decisions</div>
+        <h3>${s.decisions.length} choices that made it</h3>
+        <div class="figure" id="fig">
+          <img src="photos/${m.key}-bg.jpg" alt="" style="top:${m.img.y / 6.25}%;height:${ih}%">
+          <img src="photos/${m.key}-hero.webp" alt="${m.name}, annotated" style="top:${m.img.y / 6.25}%;height:${ih}%">
+          ${pinned.map(([d, n]) => `<span class="pin" data-n="${n}" style="left:${d[2][0] / 10}%;top:${d[2][1] / 6.25}%">${n + 1}</span>`).join('')}
+        </div>
+        <ol class="decisions">${s.decisions.map((d, n) => `<li class="glass" id="d-${n}" data-n="${n}"><b class="${d[2] ? '' : 'off'}">${n + 1}</b><h4>${d[0]}</h4><p>${d[1]}</p>${d[3] ? `<button type="button" class="rel" data-go="s-${d[3]}">See ${LINKNAME[d[3]]} →</button>` : ''}</li>`).join('')}</ol>
+      </section>
+      <section id="s-style">
+        <div class="kicker">Architectural style</div>
+        <h3>${s.style}</h3>
+        <p class="body">${s.styleNote}</p>
+        <div class="panel glass era">${eraBar(s, m.year)}</div>
+        <p class="body" style="color:var(--label-2)">Related buildings: ${s.relatives}</p>
+      </section>
+      <section id="s-materials">
+        <div class="kicker">Structure and materials</div>
+        <div class="mats">${s.materials.map(([k, v]) => `<div class="glass"><span>${k}</span>${v}</div>`).join('')}</div>
+      </section>
+      <section id="s-timeline">
+        <div class="kicker">Timeline</div>
+        <ol class="tl">${s.timeline.map(([y, e, key]) => `<li class="${key ? 'key' : ''}"><div class="y">${y}</div><div class="e">${e}</div></li>`).join('')}</ol>
+      </section>
+      <section>
+        <div class="kicker">One century, seven buildings</div>
+        <h3>From first design to opening day</h3>
+        <div class="panel glass gantt">${gantt(m.key)}
+          <div class="legend"><span><i style="background:rgba(255,255,255,.4)"></i>Design to ground-breaking</span><span><i style="background:#0a84ff;height:8px"></i>Construction</span></div>
+        </div>
+      </section>
+      <section id="s-sources">
+        <div class="kicker">Sources</div>
+        <p class="body" style="color:var(--label-2)">Facts checked in October 2026. Wind directions come from airport weather records (METAR, via the Iowa Environmental Mesonet) for 2019–2023, unless noted. Plans are simplified study diagrams; use published drawings for measured work.</p>
+        <ul class="srcs">${SOURCES[m.key].map(([t, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${t}</a></li>`).join('')}</ul>
+      </section>
+      ${next ? `<div class="nextup"><button class="capsule glass" type="button" id="nextStory">Next: ${next.name}, ${next.year} →</button></div>` : ''}`;
+    $('story').querySelectorAll('.decisions li').forEach((li) => {
+      const pin = $('story').querySelector(`.pin[data-n="${li.dataset.n}"]`);
+      if (!pin) return;
+      li.addEventListener('mouseenter', () => pin.classList.add('hot'));
+      li.addEventListener('mouseleave', () => pin.classList.remove('hot'));
+    });
+    $('nextStory')?.addEventListener('click', () => { go(cur + 1); scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
+    $('story').querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => jump(b.dataset.go)));
+  }
+  function jump(id, flash) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    if (flash) { el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 1600); }
+  }
+  const LINKNAME = { circulation: 'circulation', site: 'site and climate', materials: 'materials', style: 'style' };
+  const SOURCES = {
+    bauhaus: [['Bauhaus Dessau, Wikipedia', 'https://en.wikipedia.org/wiki/Bauhaus_Dessau'], ['Bauhaus Building, Stiftung Bauhaus Dessau', 'https://bauhaus-dessau.de/en/venues/bauhaus-building/'], ['Administration bridge, RIBApix', 'https://www.architecture.com/image-library/ribapix/image-information/poster/bauhaus-building-dessau-the-administration-block-link-bridge/posterid/RIBA92958.html']],
+    fallingwater: [['Fallingwater, Wikipedia', 'https://en.wikipedia.org/wiki/Fallingwater'], ['Fallingwater visitor guide (compression and release)', 'https://fallingwater.org/wp-content/uploads/2025/05/Visitor-guide-2025-for-web_English-1.pdf']],
+    brasilia: [['Cathedral of Brasília, Wikipedia', 'https://en.wikipedia.org/wiki/Cathedral_of_Bras%C3%ADlia'], ['Cathedral of Brasília, Designing Buildings', 'https://designingbuildings.co.uk/wiki/Cathedral_of_Brasilia']],
+    sydney: [['Sydney Opera House, Wikipedia', 'https://en.wikipedia.org/wiki/Sydney_Opera_House'], ['Utzon’s platforms, Google Arts & Culture', 'https://artsandculture.google.com/exhibit/UwLCl921UgJqLA'], ['Venue layout, Structurae', 'https://structurae.net/en/structures/sydney-opera-house'], ['Climate of Sydney, Wikipedia', 'https://en.wikipedia.org/wiki/Climate_of_Sydney']],
+    lotus: [['Lotus Temple, Wikipedia', 'https://en.wikipedia.org/wiki/Lotus_Temple']],
+    bilbao: [['Guggenheim Museum Bilbao, Wikipedia', 'https://en.wikipedia.org/wiki/Guggenheim_Museum_Bilbao'], ['Inside the museum, Guggenheim Bilbao', 'https://guggenheim-bilbao.eus/en/the-building/inside-the-museum'], ['Gehry on titanium, NPR', 'https://www.npr.org/transcripts/nx-s1-5642574'], ['Site and entrance, Archiweb', 'https://www.archiweb.cz/en/b/guggenheimovo-muzeum-v-bilbau']],
+    petronas: [['Petronas Towers, Wikipedia', 'https://en.wikipedia.org/wiki/Petronas_Towers'], ['Skybridge engineering, Engineering.com', 'https://www.engineering.com/?p=1164'], ['Skybridge and lifts, Otis', 'https://www.otis.com/en/sg/our-company/global-projects/project-showcase/petronas-twin-towers'], ['Structure, Archnet', 'https://archnet.org/sites/4402'], ['KLCC Park, Wikipedia', 'https://en.wikipedia.org/wiki/KLCC_Park']],
+  };
+
+  /* ---------- build the depth planes ---------- */
+  const DEPTH = { photo: 0, title: 70, hero: 150, fore: 215, pins: 190 };
+  const stage = $('stage');
+  const wall = $('wallpaper');
+  const svg = (inner) => `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${inner}</svg>`;
+
+  const cards = MARVELS.map((m) => {
+    const ih = Math.round(1000 * m.img.h / m.img.w);
+    const img = (src, extra = '') => `<image href="photos/${m.key}-${src}" x="0" y="${m.img.y}" width="1000" height="${ih}" preserveAspectRatio="none" ${extra}/>`;
+    const k = m.key;
+    const planes = {
+      photo: svg(`<defs><clipPath id="${k}-c"><rect width="${W}" height="${H}" rx="46"/></clipPath></defs><g clip-path="url(#${k}-c)">${img('bg.jpg')}</g>`),
+      title: svg(`<g text-anchor="middle" fill="${m.title.ink}" style="font-family:var(--sf-display)">
+          <text x="${m.title.x}" y="${m.title.y - 118}" style="font-size:26px;font-weight:600;letter-spacing:.2px" opacity=".92">${m.city}</text>
+          <text x="${m.title.x}" y="${m.title.y + 40}" style="font-size:190px;font-weight:700;letter-spacing:-6px">${m.year}</text></g>`),
+      hero: svg(`<defs><clipPath id="${k}-h"><rect x="0" y="-600" width="${W}" height="${H + 600}" rx="46"/></clipPath></defs><g clip-path="url(#${k}-h)">${img('hero.webp')}</g>`),
+      fore: svg(`<defs><linearGradient id="${k}-fg" x1="0" y1="0" x2="0" y2="1"><stop offset="${(m.fore - 40) / H}" stop-color="#fff" stop-opacity="0"/><stop offset="${m.fore / H}" stop-color="#fff"/></linearGradient>
+          <mask id="${k}-fm" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#${k}-fg)"/></mask>
+          <clipPath id="${k}-fc"><rect width="${W}" height="${H}" rx="46"/></clipPath></defs>
+          <g clip-path="url(#${k}-fc)" mask="url(#${k}-fm)">${img('hero.webp')}</g>`),
+      pins: svg(`<g class="pins">${STORY[k].decisions.map((d, n) => d[2] ? `<g class="pin-hit" data-pin="${n}"><circle class="ring" cx="${d[2][0]}" cy="${d[2][1]}" r="34"/><circle cx="${d[2][0]}" cy="${d[2][1]}" r="25"/><text x="${d[2][0]}" y="${d[2][1] + 9}" text-anchor="middle">${n + 1}</text></g>` : '').join('')}</g>`),
+    };
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.setAttribute('role', 'group');
+    card.setAttribute('aria-roledescription', 'slide');
+    card.setAttribute('aria-label', `${m.name}, ${m.city}, ${m.year}`);
+    const rig = document.createElement('div');
+    rig.className = 'rig';
+    rig.innerHTML = '<div class="edge"></div>' +
+      Object.entries(planes).map(([p, s]) => `<div class="plane${p === 'hero' ? ' lift' : ''}" style="--z:${DEPTH[p]}">${s}</div>`).join('') +
+      '<div class="sheen"></div>';
+    card.appendChild(rig);
+    stage.appendChild(card);
+
+    const w = document.createElement('img');
+    w.src = `photos/${m.key}-bg.jpg`; w.alt = '';
+    wall.appendChild(w);
+    return { el: card, rig, wall: w };
+  });
+
+  /* ---------- page control ---------- */
+  const dots = MARVELS.map((m, i) => {
+    const b = document.createElement('button');
+    b.className = 'dot'; b.type = 'button'; b.setAttribute('role', 'tab');
+    b.setAttribute('aria-label', `${m.name}, ${m.year}`);
+    b.innerHTML = '<span></span>';
+    b.addEventListener('click', () => go(i));
+    $('pager').appendChild(b);
+    return b;
+  });
+
+  /* ---------- layout ---------- */
+  let cw = 800;
+  function layout() {
+    const r = stage.getBoundingClientRect();
+    const narrow = r.width < 720;
+    cw = Math.max(240, Math.min(r.width * (narrow ? .9 : .68), r.height * .8 * 1.6));
+    stage.style.setProperty('--cw', cw + 'px');
+    stage.style.setProperty('--ch', cw / 1.6 + 'px');
+    stage.style.setProperty('--u', cw / 1000);
+    stage.style.setProperty('--lift', r.height * .04 + 'px');
+    place();
+  }
+
+  /* ---------- navigation ---------- */
+  let cur = 0, drag = 0;
+  const platter = $('platter');
+  function place() {
+    cards.forEach(({ el }, i) => {
+      const o = i - cur, a = Math.abs(o);
+      el.classList.toggle('is-active', o === 0);
+      el.setAttribute('aria-hidden', o !== 0);
+      if (o === 0) {
+        el.style.transform = `translateX(${drag}px) rotateY(${drag / cw * 18}deg)`;
+        el.style.opacity = 1; el.style.zIndex = 3;
+      } else {
+        const x = o * cw * .86 + drag * .6;
+        el.style.transform = `translateX(${x}px) translateZ(${-cw * .32 * Math.min(a, 2)}px) rotateY(${-Math.sign(o) * 30}deg)`;
+        el.style.opacity = a === 1 ? .5 : 0; el.style.zIndex = 2 - a;
+      }
+    });
+  }
+  function fill() {
+    const m = MARVELS[cur];
+    $('eyebrow').textContent = `${cur + 1} of ${MARVELS.length} · ${m.year}`;
+    $('name').textContent = m.name;
+    $('sub').textContent = m.city;
+    $('fact').textContent = m.fact;
+    $('year').textContent = m.year;
+    $('architect').textContent = m.architect;
+    $('coords').textContent = m.coords;
+    $('height').textContent = m.height;
+    $('credit').innerHTML = '';
+    const a = document.createElement('a');
+    a.href = m.credit.url; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = `Photo: ${m.credit.by}`;
+    $('credit').append(a, `, ${m.credit.lic}, via Wikimedia Commons. Cut into depth layers.`);
+    cards.forEach((c, i) => c.wall.classList.toggle('on', i === cur));
+    dots.forEach((d, i) => d.setAttribute('aria-current', i === cur));
+    $('prevBtn').disabled = cur === 0;
+    $('nextBtn').disabled = cur === MARVELS.length - 1;
+    renderStory(cur);
+    $('chips').innerHTML = STORY[m.key].decisions.map((d, n) => d[2] ? `<button type="button" class="nchip" data-n="${n}" aria-pressed="false" aria-label="${n + 1}: ${d[0]}" title="${d[0]}">${n + 1}</button>` : '').join('');
+    $('chips').querySelectorAll('button').forEach((b) => b.addEventListener('click', () => (openN === +b.dataset.n ? closePin() : openPin(+b.dataset.n))));
+  }
+  $('circBtn').addEventListener('click', () => jump('s-circulation'));
+  $('pinBtn').addEventListener('click', () => {
+    const on = stage.classList.toggle('no-pins');
+    if (on) closePin();
+    $('pinBtn').setAttribute('aria-pressed', String(!on));
+  });
+  function go(i) {
+    i = Math.max(0, Math.min(MARVELS.length - 1, i));
+    if (i === cur) { place(); return; }
+    closePin();
+    cur = i;
+    place();
+    platter.classList.add('swap');
+    setTimeout(() => { fill(); platter.classList.remove('swap'); }, 260);
+  }
+  $('prevBtn').addEventListener('click', () => go(cur - 1));
+  $('nextBtn').addEventListener('click', () => go(cur + 1));
+  addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') go(cur + 1);
+    if (e.key === 'ArrowLeft') go(cur - 1);
+  });
+
+  // swipe with finger or mouse drag
+  let down = null;
+  stage.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button, .callout')) return;
+    down = { x: e.clientX, id: e.pointerId, pin: e.target.closest('[data-pin]')?.dataset.pin };
+    stage.setPointerCapture(e.pointerId);
+    stage.classList.add('grabbing');
+    cards[cur].el.classList.add('dragging');
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!down || e.pointerId !== down.id) return;
+    const dx = e.clientX - down.x;
+    drag = dx * ((cur === 0 && dx > 0) || (cur === MARVELS.length - 1 && dx < 0) ? .3 : 1);
+    place();
+  });
+  const end = () => {
+    if (!down) return;
+    cards[cur].el.classList.remove('dragging');
+    stage.classList.remove('grabbing');
+    const d = drag, pin = down.pin; drag = 0; down = null;
+    if (pin != null && Math.abs(d) < 6) { place(); openPin(+pin); return; }
+    if (d < -60) go(cur + 1); else if (d > 60) go(cur - 1); else place();
+  };
+
+  /* ---------- annotation callout: tap a pin, or a number in the label ---------- */
+  const callout = document.createElement('div');
+  callout.className = 'callout glass';
+  callout.setAttribute('role', 'dialog');
+  callout.setAttribute('aria-label', 'Design decision');
+  callout.hidden = true;
+  stage.appendChild(callout);
+  let openN = -1;
+  function pinned() { return STORY[MARVELS[cur].key].decisions.map((d, n) => [d, n]).filter(([d]) => d[2]); }
+  function openPin(n) {
+    const d = STORY[MARVELS[cur].key].decisions[n];
+    const list = pinned(), at = list.findIndex(([, k]) => k === n);
+    openN = n;
+    callout.innerHTML = `<div class="co-top"><b>${n + 1}</b><h3>${d[0]}</h3><button type="button" class="co-x" aria-label="Close">✕</button></div>
+      <p>${d[1]}</p>
+      <div class="co-act">
+        <button type="button" class="capsule glass" data-act="story">Read in the story</button>
+        ${d[3] ? `<button type="button" class="capsule glass" data-act="rel">See ${LINKNAME[d[3]]}</button>` : ''}
+        <span class="co-nav"><button type="button" class="capsule glass" data-act="prev" aria-label="Previous annotation" ${at <= 0 ? 'disabled' : ''}>‹</button><button type="button" class="capsule glass" data-act="next" aria-label="Next annotation" ${at >= list.length - 1 ? 'disabled' : ''}>›</button></span>
+      </div>`;
+    callout.hidden = false;
+    stage.querySelectorAll('.pin-hit').forEach((g) => g.classList.toggle('on', +g.dataset.pin === n && g.closest('.card').classList.contains('is-active')));
+    $('chips').querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.n === n)));
+    callout.querySelector('.co-x').focus({ preventScroll: true });
+    const r = stage.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > innerHeight) stage.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'nearest' });
+  }
+  function closePin() {
+    callout.hidden = true; openN = -1;
+    stage.querySelectorAll('.pin-hit.on').forEach((g) => g.classList.remove('on'));
+    $('chips')?.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+  }
+  callout.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.classList.contains('co-x')) return closePin();
+    const list = pinned(), at = list.findIndex(([, k]) => k === openN);
+    const d = STORY[MARVELS[cur].key].decisions[openN];
+    if (b.dataset.act === 'story') { const n = openN; closePin(); jump('d-' + n, true); }
+    if (b.dataset.act === 'rel') { closePin(); jump('s-' + d[3], true); }
+    if (b.dataset.act === 'prev' && at > 0) openPin(list[at - 1][1]);
+    if (b.dataset.act === 'next' && at < list.length - 1) openPin(list[at + 1][1]);
+  });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && openN >= 0) closePin(); });
+  stage.addEventListener('pointerup', end);
+  stage.addEventListener('pointercancel', end);
+
+  // two-finger trackpad swipe
+  let wheelAcc = 0, wheelLock = 0;
+  addEventListener('wheel', (e) => {
+    if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    const t = performance.now();
+    if (t < wheelLock) return;
+    wheelAcc += e.deltaX;
+    if (Math.abs(wheelAcc) > 70) { go(cur + (wheelAcc > 0 ? 1 : -1)); wheelAcc = 0; wheelLock = t + 650; }
+  }, { passive: false });
+
+  /* ---------- motion: pointer, device tilt, camera lid tilt, idle drift ---------- */
+  const MAX = reduced ? 5 : 14;
+  const target = { x: 0, y: 0 }, now = { x: 0, y: 0 };
+  let lastInput = -1e9, source = 'pointer';
+  const clamp = (v) => Math.max(-1, Math.min(1, v));
+  const setSource = (s) => { if (source !== s) { source = s; $('sourceName').textContent = s; } };
+
+  addEventListener('pointermove', (e) => {
+    if (down || source === 'lid tilt') return;
+    target.x = (e.clientX / innerWidth - .5) * 2;
+    target.y = (e.clientY / innerHeight - .5) * 2;
+    lastInput = performance.now();
+    setSource('pointer');
+  });
+
+  let base = null;
+  addEventListener('deviceorientation', (e) => {
+    if (e.gamma == null || source === 'lid tilt') return;
+    if (!base) base = { b: e.beta, g: e.gamma };
+    target.x = clamp((e.gamma - base.g) / 22);
+    target.y = clamp((e.beta - base.b) / 22);
+    lastInput = performance.now();
+    setSource('device tilt');
+  });
+
+  function frameLoop(t) {
+    if (source !== 'lid tilt' && t - lastInput > 2500 && !reduced) {
+      target.x = Math.sin(t / 2400) * .38;
+      target.y = Math.cos(t / 3100) * .22;
+      if (source !== 'drift') setSource('drift');
+    }
+    if (source === 'lid tilt') camStep();
+    const k = reduced ? .06 : .085;
+    now.x += (target.x - now.x) * k;
+    now.y += (target.y - now.y) * k;
+    const { rig } = cards[cur];
+    rig.style.transform = `rotateX(${(now.y * MAX).toFixed(2)}deg) rotateY(${(-now.x * MAX).toFixed(2)}deg)`;
+    rig.style.setProperty('--sx', (50 + now.x * 45).toFixed(1) + '%');
+    rig.style.setProperty('--sy', (40 + now.y * 45).toFixed(1) + '%');
+    cards.forEach((c, i) => { if (i !== cur && c.rig.style.transform) c.rig.style.transform = ''; });
+    requestAnimationFrame(frameLoop);
+  }
+
+  /* Lid tilt: laptops have no tilt sensor, so the webcam stands in for one.
+     When the lid moves, the whole room slides in the camera image. We compare the
+     brightness profile of each frame's rows and columns against a reference frame
+     and read the shift as screen tilt. Nothing leaves the page. */
+  const CW = 64, CH = 48, MAXS = 14;
+  const cam = { stream: null, video: null, ctx: null, ref: null, sx: 0, sy: 0, frame: 0, bad: 0 };
+  const prev = $('camPreview'), pctx = prev.getContext('2d');
+
+  function norm(a) {
+    let m = 0; for (const v of a) m += v; m /= a.length;
+    let s = 0; for (const v of a) s += (v - m) ** 2; s = Math.sqrt(s / a.length) || 1;
+    return a.map((v) => (v - m) / s);
+  }
+  function profiles() {
+    cam.ctx.drawImage(cam.video, 0, 0, CW, CH);
+    const img = cam.ctx.getImageData(0, 0, CW, CH), d = img.data;
+    const col = new Float32Array(CW), row = new Float32Array(CH);
+    for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) {
+      const i = (y * CW + x) * 4, v = d[i] * .3 + d[i + 1] * .59 + d[i + 2] * .11;
+      col[x] += v; row[y] += v;
+    }
+    pctx.putImageData(img, 0, 0);
+    return { col: norm(col), row: norm(row) };
+  }
+  function bestShift(ref, cur) {
+    const errs = [];
+    let best = 0, bestE = Infinity;
+    for (let s = -MAXS; s <= MAXS; s++) {
+      let e = 0, n = 0;
+      for (let i = 0; i < ref.length; i++) { const j = i + s; if (j < 0 || j >= cur.length) continue; e += Math.abs(ref[i] - cur[j]); n++; }
+      e /= n; errs.push(e);
+      if (e < bestE) { bestE = e; best = s; }
+    }
+    const b = best + MAXS;
+    let off = 0;
+    if (b > 0 && b < errs.length - 1) { const den = errs[b - 1] - 2 * errs[b] + errs[b + 1]; if (den > 1e-6) off = (errs[b - 1] - errs[b + 1]) / (2 * den); }
+    return { s: best + off, e: bestE };
+  }
+  function camStep() {
+    if (!cam.video || cam.video.readyState < 2) return;
+    if (++cam.frame % 2) return;
+    const p = profiles();
+    if (!cam.ref || cam.frame < 12) { cam.ref = p; return; }
+    const cx = bestShift(cam.ref.col, p.col), cy = bestShift(cam.ref.row, p.row);
+    // a big mismatch means the scene changed (someone walked past): take a fresh reference
+    if (cx.e > .9 || cy.e > .9) { if (++cam.bad > 20) { cam.ref = p; cam.bad = 0; } return; }
+    cam.bad = 0;
+    cam.sx += (cx.s - cam.sx) * .5; cam.sy += (cy.s - cam.sy) * .5;
+    target.x = clamp(cam.sx / 8);
+    target.y = clamp(cam.sy / 6);
+  }
+  async function startCam() {
+    const note = $('camNote');
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('none');
+      cam.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 160 }, height: { ideal: 120 }, facingMode: 'user' }, audio: false });
+      cam.video = document.createElement('video');
+      cam.video.muted = true; cam.video.playsInline = true; cam.video.srcObject = cam.stream;
+      await cam.video.play();
+      const c = document.createElement('canvas'); c.width = CW; c.height = CH;
+      cam.ctx = c.getContext('2d', { willReadFrequently: true });
+      cam.ref = null; cam.frame = 0; cam.sx = cam.sy = 0;
+      setSource('lid tilt');
+      $('camBtn').setAttribute('aria-pressed', 'true');
+      $('camLabel').textContent = 'Stop lid tilt';
+      prev.hidden = false; $('recenterBtn').hidden = false;
+      note.hidden = false;
+      note.textContent = 'Hold the screen where it feels neutral, then tilt the lid. The camera image never leaves this page.';
+    } catch (err) {
+      note.hidden = false;
+      note.textContent = 'The camera is blocked here, so lid tilt is off. Open the local copy in Chrome to use it. Pointer and trackpad still drive the depth.';
+    }
+  }
+  function stopCam() {
+    cam.stream?.getTracks().forEach((t) => t.stop());
+    Object.assign(cam, { stream: null, video: null, ref: null });
+    $('camBtn').setAttribute('aria-pressed', 'false');
+    $('camLabel').textContent = 'Sense lid tilt';
+    prev.hidden = true; $('recenterBtn').hidden = true; $('camNote').hidden = true;
+    target.x = target.y = 0; lastInput = performance.now();
+    setSource('pointer');
+  }
+  $('camBtn').addEventListener('click', () => (cam.stream ? stopCam() : startCam()));
+  $('recenterBtn').addEventListener('click', () => { cam.ref = null; cam.frame = 0; cam.sx = cam.sy = 0; });
+
+  addEventListener('resize', layout);
+  // a link ending in #sydney (or any building key) opens on that building
+  const start = MARVELS.findIndex((m) => '#' + m.key === location.hash);
+  if (start > 0) cur = start;
+  layout();
+  fill();
+  requestAnimationFrame(frameLoop);
+})();
+</script>
+
+</body></html>
