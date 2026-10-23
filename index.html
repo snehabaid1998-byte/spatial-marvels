@@ -268,6 +268,23 @@ html { scroll-behavior: smooth; }
 .more-row { margin-left: auto; display: inline-flex; gap: 8px; flex-wrap: wrap; }
 .more-row a { text-decoration: none; }
 
+/* construction caption */
+.bcap {
+  position: absolute; z-index: 6; left: 50%; bottom: 8px; transform: translateX(-50%);
+  width: min(520px, calc(100% - 32px)); box-sizing: border-box; border-radius: 18px; padding: 10px 14px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center;
+  background: rgba(16, 36, 62, .72); pointer-events: none;
+}
+.bsteps { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.bsteps i { height: 3px; border-radius: 2px; background: rgba(255,255,255,.2); transition: background .3s; }
+.bsteps i.now { background: #64d2ff; }
+.bsteps i.done { background: #fff; }
+.btxt { min-width: 0; display: grid; gap: 1px; }
+.btxt b { font: 700 14px/1.2 var(--sf); }
+.btxt span { font-size: 13px; line-height: 1.35; color: rgba(255,255,255,.82); }
+.bcap em { font: 700 22px/1 var(--sf-display); font-style: normal; font-variant-numeric: tabular-nums; color: #64d2ff; }
+.stage.building .pins { pointer-events: none; }
+
 /* story navigation + digest helpers */
 .snav {
   position: sticky; top: max(10px, env(safe-area-inset-top, 0px)); z-index: 8;
@@ -383,7 +400,7 @@ html { scroll-behavior: smooth; }
       <h2 class="name" id="name"></h2>
       <div class="sub" id="sub"></div>
       <p class="fact" id="fact"></p>
-      <div class="chiprow"><span>Annotations</span><span id="chips"></span><span class="more-row"><button type="button" class="capsule glass" id="circBtn">Circulation ↓</button><a class="capsule glass" href="#story">Full story ↓</a></span></div>
+      <div class="chiprow"><span>Annotations</span><span id="chips"></span><span class="more-row"><button type="button" class="capsule glass" id="buildBtn">Construction ▶</button><button type="button" class="capsule glass" id="circBtn">Circulation ↓</button><a class="capsule glass" href="#story">Full story ↓</a></span></div>
     </div>
     <dl class="rows fade">
       <div><dt>Completed</dt><dd id="year"></dd></div>
@@ -393,7 +410,7 @@ html { scroll-behavior: smooth; }
     </dl>
     <div class="foot">
       <div class="credit fade" id="credit"></div>
-      <span class="hint">Swipe left for the next decade</span>
+      <span class="hint">Hover the building to watch it go up · swipe for the next decade</span>
       <div class="pager" id="pager" role="tablist" aria-label="Choose a building"></div>
     </div>
   </footer>
@@ -936,6 +953,19 @@ html { scroll-behavior: smooth; }
     petronas: [['Petronas Towers, Wikipedia', 'https://en.wikipedia.org/wiki/Petronas_Towers'], ['Skybridge engineering, Engineering.com', 'https://www.engineering.com/?p=1164'], ['Skybridge and lifts, Otis', 'https://www.otis.com/en/sg/our-company/global-projects/project-showcase/petronas-twin-towers'], ['Structure, Archnet', 'https://archnet.org/sites/4402'], ['KLCC Park, Wikipedia', 'https://en.wikipedia.org/wiki/KLCC_Park']],
   };
 
+  /* ---------- construction story: how each building went up, layer by layer ----------
+     ground: card y where the building meets its site; the site below it is there from the start.
+     steel: the structure is a steel frame (shown steel-blue) rather than concrete or stone (grey). */
+  const BUILD = {
+    bauhaus: { ground: 590, plan: 'Gropius’s office draws workshops, school and studios as one complex', struct: 'Reinforced concrete frame', skin: 'Steel-framed glass curtain wall and white render', finish: 'Opens on 4 December 1926' },
+    fallingwater: { ground: 625, plan: 'Wright draws the house on top of the falls', struct: 'Sandstone core, then concrete cantilevers poured over the stream', skin: 'Windows framed in Cherokee red, ochre-painted concrete', finish: 'Family moves in 1937; guest wing done 1939' },
+    brasilia: { ground: 600, plan: 'Niemeyer’s hyperboloid of sixteen columns', struct: 'Sixteen precast concrete columns, about 90 tonnes each', skin: 'Glass fills the gaps between the ribs', finish: 'Dedicated on 31 May 1970' },
+    sydney: { ground: 398, plan: 'Utzon’s competition-winning shells', struct: 'Podium first, then precast concrete ribs for the shells', skin: 'Over a million Swedish ceramic tiles, then glass walls', finish: 'Opened by Queen Elizabeth II, 20 October 1973' },
+    lotus: { ground: 560, plan: 'Sahba’s 27-petal lotus, approved in 1977', struct: 'Cast-in-place reinforced concrete shells', skin: 'White Pentelic marble from Greece', finish: 'Dedicated on 24 December 1986' },
+    bilbao: { ground: 470, steel: true, plan: 'Gehry’s paper models turned into CATIA drawings', struct: 'Steel frame', skin: 'Titanium plates, Spanish limestone and glass', finish: 'Opens on 18 October 1997' },
+    petronas: { ground: 625, plan: 'Pelli’s towers on an eight-pointed star plan', struct: 'High-strength concrete core and 16 columns', skin: 'Stainless steel and glass curtain wall', finish: 'World’s tallest building, 1998' },
+  };
+
   /* ---------- build the depth planes ---------- */
   const DEPTH = { photo: 0, title: 70, hero: 150, fore: 215, pins: 190 };
   const stage = $('stage');
@@ -950,8 +980,21 @@ html { scroll-behavior: smooth; }
       photo: svg(`<defs><clipPath id="${k}-c"><rect width="${W}" height="${H}" rx="46"/></clipPath></defs><g clip-path="url(#${k}-c)">${img('bg.jpg')}</g>`),
       title: svg(`<g text-anchor="middle" fill="${m.title.ink}" style="font-family:var(--sf-display)">
           <text x="${m.title.x}" y="${m.title.y - 118}" style="font-size:26px;font-weight:600;letter-spacing:.2px" opacity=".92">${m.city}</text>
-          <text x="${m.title.x}" y="${m.title.y + 40}" style="font-size:190px;font-weight:700;letter-spacing:-6px">${m.year}</text></g>`),
-      hero: svg(`<defs><clipPath id="${k}-h"><rect x="0" y="-600" width="${W}" height="${H + 600}" rx="46"/></clipPath></defs><g clip-path="url(#${k}-h)">${img('hero.webp')}</g>`),
+          <text class="yr" x="${m.title.x}" y="${m.title.y + 40}" style="font-size:190px;font-weight:700;letter-spacing:-6px">${m.year}</text></g>`),
+      // the building plane doubles as the construction story: site, blueprint, structure, then the finished skin
+      hero: svg(`<defs><clipPath id="${k}-h"><rect x="0" y="-600" width="${W}" height="${H + 600}" rx="46"/></clipPath>
+          <clipPath id="${k}-site"><rect x="-50" y="${BUILD[k].ground}" width="1100" height="${H - BUILD[k].ground + 50}"/></clipPath>
+          <clipPath id="${k}-cl"><rect class="b-cl" x="-50" y="${BUILD[k].ground}" width="1100" height="0"/></clipPath>
+          <clipPath id="${k}-cs"><rect class="b-cs" x="-50" y="${BUILD[k].ground}" width="1100" height="0"/></clipPath>
+          <clipPath id="${k}-ck"><rect class="b-ck" x="-50" y="-600" width="1100" height="${BUILD[k].ground + 600}"/></clipPath>
+          <pattern id="${k}-grid" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="#9fd4ff" stroke-opacity=".32" stroke-width="1"/></pattern></defs>
+          <rect class="b-grid" x="0" y="0" width="${W}" height="${BUILD[k].ground}" fill="url(#${k}-grid)" opacity="0"/>
+          <g clip-path="url(#${k}-h)">
+            <g clip-path="url(#${k}-site)">${img('hero.webp')}</g>
+            <g clip-path="url(#${k}-cs)">${img('hero.webp', `style="filter:${BUILD[k].steel ? 'grayscale(1) sepia(.35) hue-rotate(175deg) brightness(.85) contrast(1.15)' : 'grayscale(1) brightness(1.04) contrast(.88)'}"`)}</g>
+            <g clip-path="url(#${k}-ck)">${img('hero.webp')}</g>
+            <g class="b-lines" opacity="0" clip-path="url(#${k}-cl)">${img('lines.webp')}</g>
+          </g>`),
       fore: svg(`<defs><linearGradient id="${k}-fg" x1="0" y1="0" x2="0" y2="1"><stop offset="${(m.fore - 40) / H}" stop-color="#fff" stop-opacity="0"/><stop offset="${m.fore / H}" stop-color="#fff"/></linearGradient>
           <mask id="${k}-fm" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#${k}-fg)"/></mask>
           <clipPath id="${k}-fc"><rect width="${W}" height="${H}" rx="46"/></clipPath></defs>
@@ -966,7 +1009,7 @@ html { scroll-behavior: smooth; }
     const rig = document.createElement('div');
     rig.className = 'rig';
     rig.innerHTML = '<div class="edge"></div>' +
-      Object.entries(planes).map(([p, s]) => `<div class="plane${p === 'hero' ? ' lift' : ''}" style="--z:${DEPTH[p]}">${s}</div>`).join('') +
+      Object.entries(planes).map(([p, s]) => `<div class="plane${p === 'hero' ? ' lift' : ''}" data-plane="${p}" style="--z:${DEPTH[p]}">${s}</div>`).join('') +
       '<div class="sheen"></div>';
     card.appendChild(rig);
     stage.appendChild(card);
@@ -1052,6 +1095,7 @@ html { scroll-behavior: smooth; }
     i = Math.max(0, Math.min(MARVELS.length - 1, i));
     if (i === cur) { place(); return; }
     closePin();
+    endBuild(false); hoverOn = false;
     cur = i;
     place();
     platter.classList.add('swap');
@@ -1132,6 +1176,88 @@ html { scroll-behavior: smooth; }
     if (b.dataset.act === 'next' && at < list.length - 1) openPin(list[at + 1][1]);
   });
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && openN >= 0) closePin(); });
+
+  /* ---------- construction sequence: hover the building (or press Construction) ---------- */
+  const STAGES = [['Design', 'plan', 1500], ['Structure', 'struct', 1800], ['Envelope', 'skin', 1800], ['Finished', 'finish', 900]];
+  const bcap = document.createElement('div');
+  bcap.className = 'bcap glass';
+  bcap.setAttribute('aria-live', 'polite');
+  bcap.hidden = true;
+  bcap.innerHTML = `<div class="bsteps">${STAGES.map(() => '<i></i>').join('')}</div><div class="btxt"><b></b><span></span></div><em></em>`;
+  stage.appendChild(bcap);
+  let bld = null;
+  const easeIO = (t) => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+  function buildParts(i) {
+    const r = cards[i].rig;
+    return { cl: r.querySelector('.b-cl'), cs: r.querySelector('.b-cs'), ck: r.querySelector('.b-ck'), lines: r.querySelector('.b-lines'), grid: r.querySelector('.b-grid'),
+      fore: r.querySelector('[data-plane="fore"]'), pins: r.querySelector('[data-plane="pins"]'), yr: r.querySelector('.yr'), ground: BUILD[MARVELS[i].key].ground };
+  }
+  function wipe(rect, f, ground) { const y = ground - f * (ground + 600); rect.setAttribute('y', y.toFixed(1)); rect.setAttribute('height', (ground - y).toFixed(1)); }
+  function paintBuild(P, s) {
+    wipe(P.cl, s.plan, P.ground); wipe(P.cs, s.struct, P.ground); wipe(P.ck, s.skin, P.ground);
+    P.lines.setAttribute('opacity', (s.plan * (1 - s.skin)).toFixed(3));
+    P.grid.setAttribute('opacity', (Math.min(1, s.plan * 2) * (1 - s.skin) * .9).toFixed(3));
+    P.fore.style.opacity = s.finish; P.pins.style.opacity = s.finish;
+  }
+  function caption(i, k) {
+    const m = MARVELS[i], s = STORY[m.key], b = BUILD[m.key], [name, key] = STAGES[k];
+    bcap.querySelector('b').textContent = `${k + 1} · ${name}`;
+    bcap.querySelector('span').textContent = b[key];
+    bcap.querySelector('em').textContent = key === 'plan' ? s.designed : key === 'struct' ? `from ${s.built[0]}` : key === 'skin' ? `by ${s.built[1]}` : m.year;
+    bcap.querySelectorAll('.bsteps i').forEach((el, n) => el.className = n < k ? 'done' : n === k ? 'now' : '');
+  }
+  function startBuild() {
+    if (bld || openN >= 0 || down) return;
+    const i = cur, P = buildParts(i), m = MARVELS[i], s = STORY[m.key];
+    bld = { i, P, k: 0, t0: performance.now(), raf: 0 };
+    paintBuild(P, { plan: 0, struct: 0, skin: 0, finish: 0 });
+    P.yr.textContent = s.designed;
+    stage.classList.add('building');
+    bcap.hidden = false; caption(i, 0);
+    const tick = (now) => {
+      if (!bld || bld.i !== i) return;
+      const [, key, dur] = STAGES[bld.k];
+      let f = reduced ? 1 : Math.min(1, (now - bld.t0) / dur);
+      const e = easeIO(f);
+      const st = { plan: 1, struct: 1, skin: 1, finish: 1 };
+      const order = STAGES.map((x) => x[1]);
+      order.forEach((o, n) => { st[o] = n < bld.k ? 1 : n === bld.k ? e : 0; });
+      paintBuild(P, st);
+      // the big year counts up while the building goes up
+      const span = m.year - s.designed;
+      const prog = key === 'plan' ? 0 : key === 'struct' ? e * .5 : key === 'skin' ? .5 + e * .5 : 1;
+      P.yr.textContent = Math.round(s.designed + span * prog);
+      const hold = reduced ? 1300 : 0;
+      if (f >= 1 && now - bld.t0 >= dur + hold) {
+        if (bld.k === STAGES.length - 1) return endBuild(true);
+        bld.k++; bld.t0 = now; caption(i, bld.k);
+      }
+      bld.raf = requestAnimationFrame(tick);
+    };
+    bld.raf = requestAnimationFrame(tick);
+  }
+  function endBuild(natural) {
+    if (!bld) return;
+    cancelAnimationFrame(bld.raf);
+    const { P, i } = bld;
+    paintBuild(P, { plan: 0, struct: 0, skin: 1, finish: 1 });
+    P.yr.textContent = MARVELS[i].year;
+    bld = null;
+    stage.classList.remove('building');
+    if (natural) { caption(i, STAGES.length - 1); bcap.querySelectorAll('.bsteps i').forEach((el) => el.className = 'done'); setTimeout(() => { if (!bld) bcap.hidden = true; }, 1800); }
+    else bcap.hidden = true;
+  }
+  // hover over the building for a moment to watch it go up; leaving finishes it at once
+  let hoverOn = false, dwell = 0;
+  const overCard = (e) => { const r = cards[cur].el.getBoundingClientRect(); return e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom && !e.target.closest('.callout, .nav'); };
+  stage.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse' || down) return;
+    const over = overCard(e);
+    if (over && !hoverOn) { hoverOn = true; clearTimeout(dwell); dwell = setTimeout(startBuild, 350); }
+    else if (!over && hoverOn) { hoverOn = false; clearTimeout(dwell); endBuild(false); }
+  });
+  stage.addEventListener('pointerleave', () => { hoverOn = false; clearTimeout(dwell); endBuild(false); });
+  $('buildBtn').addEventListener('click', () => { endBuild(false); if (stage.getBoundingClientRect().top < 0) stage.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }); startBuild(); });
   stage.addEventListener('pointerup', end);
   stage.addEventListener('pointercancel', end);
 

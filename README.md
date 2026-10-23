@@ -14,6 +14,17 @@ Seven buildings that shaped 20th-century architecture, shown as Apple-style spat
 | 6 | Guggenheim Museum Bilbao | Bilbao, Spain | 1997 | Frank Gehry |
 | 7 | Petronas Twin Towers | Kuala Lumpur, Malaysia | 1998 | César Pelli |
 
+## Watch it being built
+
+Hover over a building, or press **Construction ▶** on a touch screen, and the card shows how it went up:
+
+1. **Design:** the empty site appears, and blueprint lines draw themselves over a drafting grid.
+2. **Structure:** the frame rises from the ground in its raw material. Concrete and stone show grey; Bilbao's steel frame shows steel-blue.
+3. **Envelope:** the finished materials (glass, titanium, marble, tiles) rise over the structure.
+4. **Finished:** the landscape and annotations return.
+
+Meanwhile the big year counts up from the year of the design to opening day, and a caption names each stage and its material. Moving the pointer away jumps straight to the finished building.
+
 ## What each building's story covers
 
 1. **Overview:** why it was built, the big idea, and the lesson for your own work.
@@ -30,7 +41,7 @@ Seven buildings that shaped 20th-century architecture, shown as Apple-style spat
 
 ## How it's built
 
-It is a single `index.html` with no build step and no dependencies apart from the Inter font from Google Fonts. Each photo is split into two layers: a background with the building cut out and the sky filled back in (`*-bg.jpg`), and the building cutout (`*-hero.webp`). The year sits between these layers, as on the iPhone Lock Screen, and CSS 3D transforms separate the layers when the card tilts.
+It is a single `index.html` with no build step and no dependencies apart from the Inter font from Google Fonts. Each photo is split into layers: a background with the building cut out and the sky filled back in (`*-bg.jpg`), the building cutout (`*-hero.webp`), and a blueprint line drawing traced from the cutout (`*-lines.webp`) for the construction sequence. The year sits between these layers, as on the iPhone Lock Screen, and CSS 3D transforms separate the layers when the card tilts.
 
 To run it locally, serve the folder with any static server:
 
