@@ -1,7 +1,6 @@
-<!doctype html>
-<html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>html,body{margin:0}[hidden]{display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <meta charset="utf-8">
-<title>Spatial Marvels</title>
+<title>Spatial London</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -113,6 +112,7 @@ body {
 }
 .card.is-active .plane { --pp: 1; transition: --pp 1.05s cubic-bezier(.34, 1.5, .5, 1) calc(.18s + var(--i, 0) * 90ms); }
 .plane svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.plane[data-plane="title"] { filter: drop-shadow(0 calc(var(--u, .8) * 3px) calc(var(--u, .8) * 14px) rgba(0, 0, 0, .35)); }
 .plane.lift { filter: drop-shadow(0 calc(var(--u, .8) * 10px) calc(var(--u, .8) * 14px) rgba(0, 0, 0, .38)); }
 .edge {
   position: absolute; inset: 0; border-radius: 4.6% / 7.4%;
@@ -281,6 +281,19 @@ html { scroll-behavior: smooth; }
 .more-row { margin-left: auto; display: inline-flex; gap: 8px; flex-wrap: wrap; }
 .more-row a { text-decoration: none; }
 
+.kfacts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.kfacts div { border-radius: 16px; padding: 12px 14px; min-width: 0; }
+.kfacts dt { font: 600 11px var(--sf); color: var(--label-2); text-transform: uppercase; letter-spacing: .05em; }
+.kfacts dd { margin: 4px 0 0; font: 600 15px/1.35 var(--sf); overflow-wrap: anywhere; }
+.imr { display: grid; gap: 6px; margin: 0; }
+.imr div { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.imr dt { font: 700 11px var(--sf); text-transform: uppercase; letter-spacing: .05em; color: #64d2ff; }
+.imr div:nth-child(2) dt { color: #ffd60a; }
+.imr div:nth-child(3) dt { color: #30d158; }
+.imr dd { margin: 0; font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.86); }
+.callout .imr { margin: 8px 0 12px; }
+@media (max-width: 860px) { .kfacts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 /* construction caption */
 .bcap {
   position: absolute; z-index: 6; left: 50%; bottom: 8px; transform: translateX(-50%);
@@ -367,6 +380,17 @@ html { scroll-behavior: smooth; }
   .tiles, .mats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .split, .decisions { grid-template-columns: 1fr; }
 }
+/* hand control */
+.hud { position: absolute; z-index: 7; right: 12px; top: 10px; width: 112px; border-radius: 14px; overflow: hidden; pointer-events: none; padding: 0; }
+.hud canvas { display: block; width: 112px; height: 84px; }
+.hud span { display: block; padding: 4px 8px 5px; font: 600 11px/1.2 var(--sf); color: var(--label-2); }
+.hud.seen span { color: #30d158; }
+.hand-dot { position: absolute; z-index: 6; left: 0; top: 0; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255,255,255,.95) 0 5px, rgba(10,132,255,.55) 6px, rgba(10,132,255,0) 19px); box-shadow: 0 0 0 2px rgba(255,255,255,.6) inset; opacity: 0; transition: opacity .25s, transform .06s linear; }
+.hand-dot.on { opacity: 1; }
+.hand-dot.pinch { background: radial-gradient(circle, #fff 0 7px, rgba(48,209,88,.7) 8px, rgba(48,209,88,0) 19px); }
+.gtoast { position: absolute; z-index: 8; left: 50%; top: 44%; transform: translate(-50%, -50%) scale(.9); padding: 10px 18px; border-radius: 999px; font: 700 16px/1 var(--sf); opacity: 0; pointer-events: none; transition: opacity .2s, transform .25s cubic-bezier(.3,1.4,.5,1); }
+.gtoast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 @media (max-width: 720px) {
   .app { height: auto; grid-template-rows: auto 58vh auto; }
   .platter { grid-template-columns: 1fr; padding: 16px; }
@@ -383,8 +407,8 @@ html { scroll-behavior: smooth; }
 <div class="app">
   <header class="toolbar">
     <div class="title">
-      <h1>Spatial Marvels</h1>
-      <span>Seven buildings of the 20th century</span>
+      <h1>Spatial London</h1>
+      <span>Ten commercial landmarks, 1986–2022</span>
     </div>
     <div class="controls">
       <span class="status glass"><i></i>Depth from <b id="sourceName">pointer</b></span>
@@ -392,6 +416,10 @@ html { scroll-behavior: smooth; }
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         <canvas id="camPreview" width="64" height="48" hidden></canvas>
         <span id="camLabel">Sense lid tilt</span>
+      </button>
+      <button class="capsule glass" id="handBtn" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11V5.5a1.5 1.5 0 0 1 3 0V10M10 9.5v-6a1.5 1.5 0 0 1 3 0V10M13 10V4.5a1.5 1.5 0 0 1 3 0V11M16 9.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-2.7L3.3 15.4a1.6 1.6 0 0 1 2.5-2L7 15"/></svg>
+        <span id="handLabel">Hand control</span>
       </button>
       <button class="capsule glass" id="recenterBtn" type="button" hidden>Recenter</button>
       <button class="capsule glass" id="pinBtn" type="button" aria-pressed="true">Annotations</button>
@@ -424,7 +452,7 @@ html { scroll-behavior: smooth; }
     </dl>
     <div class="foot">
       <div class="credit fade" id="credit"></div>
-      <span class="hint">Hover the building to watch it go up · swipe for the next decade</span>
+      <span class="hint">Hover the building to watch it go up · swipe, or wave your hand, for the next building</span>
       <div class="pager" id="pager" role="tablist" aria-label="Choose a building"></div>
     </div>
   </footer>
@@ -444,172 +472,259 @@ html { scroll-behavior: smooth; }
      title: where the big year sits behind the building, like the clock on an iPhone Lock Screen.
      fore: where the foreground strip starts. */
   const MARVELS = [
-    { key: 'bauhaus', name: 'Bauhaus Building', city: 'Dessau, Germany', year: 1926, architect: 'Walter Gropius', coords: '51.8394° N, 12.2275° E', height: '3–5 storeys',
-      fact: 'Built for the design school that taught a century of designers. The workshop wing hangs a three-storey glass curtain wall in front of its frame, so the structure reads as a skin of light.',
-      img: { w: 1800, h: 1418, y: -96 }, title: { y: 150, x: 230, ink: '#ffffff' }, fore: 560,
-      credit: { by: 'JensKunstfreund', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Au%C3%9Fenansichten_des_Bauhaus-Geb%C3%A4udes_in_Dessau_08.jpg' } },
-    { key: 'fallingwater', name: 'Fallingwater', city: 'Mill Run, Pennsylvania', year: 1939, architect: 'Frank Lloyd Wright', coords: '39.9063° N, 79.4679° W', height: '3 levels over Bear Run',
-      fact: 'Built right over the falls on Bear Run instead of facing them. Concrete terraces cantilever out from a sandstone core quarried on the site.',
-      img: { w: 1800, h: 1182, y: -20 }, title: { y: 150, x: 205, ink: '#ffffff' }, fore: 520,
-      credit: { by: 'lachrimae72', lic: 'CC0', url: 'https://commons.wikimedia.org/wiki/File:Fallingwater3.jpg' } },
-    { key: 'brasilia', name: 'Cathedral of Brasília', city: 'Brasília, Brazil', year: 1970, architect: 'Oscar Niemeyer', coords: '15.7983° S, 47.8756° W', height: '40 m',
-      fact: 'Sixteen curved concrete columns, each about 90 tonnes, meet in a ring and open again like hands raised to the sky. Most of the nave sits below ground.',
-      img: { w: 1800, h: 1200, y: -20 }, title: { y: 160, x: 500, ink: '#ffffff' }, fore: 560,
-      credit: { by: 'Roberto Castro / MTur', lic: 'Public domain', url: 'https://commons.wikimedia.org/wiki/File:Roberto_Castro_Catedral_Metropolitana_de_Nossa_Senhora_Aparecida_Brasilia_DF_(39098957600).jpg' } },
-    { key: 'sydney', name: 'Sydney Opera House', city: 'Sydney, Australia', year: 1973, architect: 'Jørn Utzon', coords: '33.8568° S, 151.2153° E', height: '65 m',
-      fact: 'The shells are cut from the surface of one imaginary sphere, which made them buildable. They are covered in 1,056,006 self-cleaning tiles made in Sweden.',
-      img: { w: 1800, h: 1200, y: -40 }, title: { y: 135, x: 500, ink: '#ffffff' }, fore: 470,
-      credit: { by: 'Dietmar Rabich', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Sydney_(AU),_Opera_House_--_2019_--_2130.jpg' } },
-    { key: 'lotus', name: 'Lotus Temple', city: 'New Delhi, India', year: 1986, architect: 'Fariborz Sahba', coords: '28.5535° N, 77.2588° E', height: '40.8 m',
-      fact: 'Twenty-seven free-standing petals, grouped in threes to form nine sides, clad in white marble from Mount Pentelicus in Greece. Nine pools surround it like leaves.',
-      img: { w: 1800, h: 1200, y: -10 }, title: { y: 165, x: 500, ink: '#ffffff' }, fore: 540,
-      credit: { by: 'A. Savin', lic: 'FAL', url: 'https://commons.wikimedia.org/wiki/File:Lotus_Temple_in_New_Delhi_03-2016.jpg' } },
-    { key: 'bilbao', name: 'Guggenheim Museum Bilbao', city: 'Bilbao, Spain', year: 1997, architect: 'Frank Gehry', coords: '43.2687° N, 2.9340° W', height: 'Atrium 50 m',
-      fact: 'About 33,000 titanium panels, each under half a millimetre thick, wrap curves worked out in aerospace software. The museum turned a port city into a destination.',
-      img: { w: 1800, h: 1125, y: 0 }, title: { y: 150, x: 230, ink: '#ffffff' }, fore: 470,
-      credit: { by: 'José Ligero Loarte', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Museo_Guggenheim_--_2021_--_Bilbao,_Euskadi,_Espa%C3%B1a.jpg' } },
-    { key: 'petronas', name: 'Petronas Twin Towers', city: 'Kuala Lumpur, Malaysia', year: 1998, architect: 'César Pelli', coords: '3.1579° N, 101.7116° E', height: '452 m',
-      fact: 'The world’s tallest buildings from 1998 to 2004. Each floor plan is an eight-pointed star from Islamic geometry, and a skybridge joins the towers at floors 41 and 42.',
-      img: { w: 1800, h: 1711, y: -250 }, title: { y: 200, x: 500, ink: '#ffffff' }, fore: 540,
-      credit: { by: 'Marcin Konsek', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:2016_Kuala_Lumpur,_Petronas_Towers_(26).jpg' } },
+    { key: 'lloyds', name: 'Lloyd’s building', city: 'City of London', year: 1986, architect: 'Richard Rogers & Partners', coords: '51.5131° N, 0.0824° W', height: '88 m (95 m with cranes)',
+      fact: 'Every service moved outside: stairs, lifts, toilets and ducts ride on six steel-clad towers, leaving one 60 m atrium and open trading floors inside.',
+      img: { w: 1800, h: 2400, x: 180, y: -200, cw: 640 }, title: { y: 150, x: 112, s: 100, ink: '#ffffff' }, fore: 520,
+      credit: { by: 'DanielMichaelPerry', lic: 'CC0', url: 'https://commons.wikimedia.org/wiki/File:Lloyd%27s_Building_from_St_Mary_Axe.jpg' } },
+    { key: 'canada', name: 'One Canada Square', city: 'Canary Wharf, Docklands', year: 1991, architect: 'César Pelli & Associates', coords: '51.5050° N, 0.0196° W', height: '235 m',
+      fact: 'Britain’s tallest building from 1990 to 2012. Its stainless-steel skin and pyramid crown, with an aircraft warning light, became the symbol of a new business district built on closed docks.',
+      img: { w: 1800, h: 1349, x: 0, y: -40, cw: 1000 }, title: { y: 190, x: 470, s: 150, ink: '#ffffff' }, fore: 610,
+      credit: { by: 'mattbuck', lic: 'CC BY-SA 3.0', url: 'https://commons.wikimedia.org/wiki/File:London_MMB_%C2%AB11_Canary_Wharf.jpg' } },
+    { key: 'gherkin', name: '30 St Mary Axe', city: 'City of London', year: 2004, architect: 'Foster + Partners', coords: '51.5144° N, 0.0803° W', height: '180 m',
+      fact: 'Each floor turns five degrees, so six lightwells spiral up the tower and bring daylight and air deep into the floors. It was designed to use about half the energy of a comparable tower.',
+      img: { w: 1800, h: 2461, x: 190, y: -205, cw: 620 }, title: { y: 200, x: 650, s: 150, ink: '#ffffff' }, fore: 560,
+      credit: { by: 'Carlos Delgado', lic: 'CC BY-SA 3.0', url: 'https://commons.wikimedia.org/wiki/File:30_St_Mary_Axe_(Swiss_Re_Building)_and_St_Andrew_Undershaft_church.jpg' } },
+    { key: 'shard', name: 'The Shard', city: 'London Bridge, Southwark', year: 2012, architect: 'Renzo Piano Building Workshop', coords: '51.5044° N, 0.0864° W', height: '309.6 m',
+      fact: 'A vertical town of offices, restaurants, a hotel, homes and a public viewing gallery, stacked on top of one of London’s busiest stations. Eight sloping glass planes never quite meet at the top.',
+      img: { w: 1800, h: 1106, x: -15, y: -6, cw: 1030 }, title: { y: 230, x: 350, s: 190, ink: '#ffffff' }, fore: 520,
+      credit: { by: 'Diego Delso', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Ayuntamiento_y_Shard,_Londres,_Inglaterra,_2014-08-11,_DD_076.JPG' } },
+    { key: 'leadenhall', name: 'The Leadenhall Building', city: 'City of London', year: 2014, architect: 'Rogers Stirk Harbour + Partners', coords: '51.5138° N, 0.0823° W', height: '225 m',
+      fact: 'Its south face leans back so the tower stays out of the protected view of St Paul’s Cathedral from Fleet Street. A steel megaframe on the outside replaces the usual concrete core.',
+      img: { w: 1800, h: 2393, x: 180, y: -205, cw: 640 }, title: { y: 150, x: 650, s: 150, ink: '#ffffff' }, fore: 590,
+      credit: { by: 'Colin', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Cheesegrater_and_Gherkin.jpg' } },
+    { key: 'walkie', name: '20 Fenchurch Street', city: 'City of London', year: 2014, architect: 'Rafael Viñoly', coords: '51.5114° N, 0.0836° W', height: '160 m',
+      fact: 'It widens as it rises, putting more floor space at the top. Its curved south face once focused sunlight hot enough to damage a car, and a public Sky Garden fills the top three floors.',
+      img: { w: 1800, h: 1200, x: 0, y: -30, cw: 1000 }, title: { y: 150, x: 830, s: 130, ink: '#1d2430' }, fore: 625,
+      credit: { by: 'Diliff', lic: 'CC BY-SA 3.0', url: 'https://commons.wikimedia.org/wiki/File:20_Fenchurch_St_(Walkie-Talkie_building)_from_Rood_Ln,_London,_UK_-_Diliff.jpg' } },
+    { key: 'bloomberg', name: 'Bloomberg London', city: 'City of London', year: 2017, architect: 'Foster + Partners', coords: '51.5125° N, 0.0908° W', height: 'A full city block',
+      fact: 'Built around an open newsroom for 4,000 people, it scored 98.5% under BREEAM, the highest design-stage score for a major office. A 210 m bronze ramp spirals through the building so people meet as they move.',
+      img: { w: 1800, h: 1350, x: 0, y: -60, cw: 1000 }, title: { y: 535, x: 210, s: 130, ink: '#ffffff' }, fore: 560,
+      credit: { by: 'The wub', lic: 'CC BY-SA 4.0', url: 'https://commons.wikimedia.org/wiki/File:Bloomberg_London_central_ramp_-_2.jpg' } },
+    { key: 'coaldrops', name: 'Coal Drops Yard', city: 'King’s Cross', year: 2018, architect: 'Heatherwick Studio', coords: '51.5364° N, 0.1264° W', height: 'Two Victorian sheds',
+      fact: 'Two Victorian coal sheds were stretched until their roofs touched. The “kissing roof” adds a new upper floor and turns a forgotten yard into a sheltered shopping street.',
+      img: { w: 1800, h: 1200, x: 0, y: -10, cw: 1000 }, title: { y: 62, x: 425, s: 72, ink: '#1d2430' }, fore: 560,
+      credit: { by: 'Fred Romero', lic: 'CC BY 2.0', url: 'https://commons.wikimedia.org/wiki/File:London_-_Coals_Drop_Yard_(33500465628).jpg' } },
+    { key: 'bishopsgate', name: '22 Bishopsgate', city: 'City of London', year: 2020, architect: 'PLP Architecture', coords: '51.5145° N, 0.0829° W', height: '278 m',
+      fact: 'Planned as a vertical village for up to 12,000 people, with a food market, a gym, space for over 1,000 bikes and Horizon 22, a free viewing gallery 254 m up.',
+      img: { w: 1800, h: 1350, x: 0, y: -70, cw: 1000 }, title: { y: 250, x: 720, s: 150, ink: '#ffffff' }, fore: 590,
+      credit: { by: 'Matt Brown', lic: 'CC BY 2.0', url: 'https://commons.wikimedia.org/wiki/File:Light_reflecting_off_22_Bishopsgate_2024-11-13.jpg' } },
+    { key: 'battersea', name: 'Battersea Power Station', city: 'Nine Elms, Wandsworth', year: 2022, architect: 'WilkinsonEyre (restoration)', coords: '51.4817° N, 0.1447° W', height: 'Lift 109 viewpoint, 109 m',
+      fact: 'One of the world’s largest brick buildings stood empty for almost 40 years after 1983. It reopened in 2022 with Apple’s London offices, shops, homes and a glass lift inside a chimney.',
+      img: { w: 1800, h: 1350, x: 0, y: -80, cw: 1000 }, title: { y: 210, x: 700, s: 150, ink: '#ffffff' }, fore: 500,
+      credit: { by: 'Alan Hughes', lic: 'CC BY-SA 2.0', url: 'https://commons.wikimedia.org/wiki/File:Battersea_Power_Station_-_geograph.org.uk_-_7356825.jpg' } },
   ];
 
   /* ---------- the story behind each building ----------
      pins: [x, y] in card units, matching the photo placement above; null = not visible in the photo.
      wind: direction the prevailing wind blows FROM, in compass degrees.
      sun: N = sun arcs through the south sky, S = through the north, EQ = nearly overhead. */
+  const LDN_WIND = [[240, 'WSW to SW'], [90, 'E, often in spring']];
+  const LDN_WINDSRC = 'London City Airport, 2019–2023: winds mostly from the west-south-west and south-west; easterlies are common in spring. The strongest gusts come from the west.';
+  const LDN_CLIMATE = 'Temperate maritime, mild and wet (Köppen Cfb)';
   const STORY = {
-    bauhaus: {
-      style: 'International Style', span: [1919, 1965], designed: 1925, built: [1925, 1926], client: 'City of Dessau',
-      styleNote: 'Form follows function. Flat roofs, white render, steel and glass, no ornament, and an asymmetric plan you only understand by walking around it.',
-      relatives: 'Villa Savoye (1931), Barcelona Pavilion (1929), Seagram Building (1958)',
-      need: 'In late 1924 the increasingly right-wing state government of Thuringia forced the Bauhaus out of Weimar. Dessau, a fast-growing industrial town and home of the Junkers aircraft works, offered to pay for a new building. The brief was one complex where teaching, workshops and student life could run side by side.',
-      site: 'A greenfield plot on the edge of town, in an area set aside for new housing. A public road ran through the site, so Gropius bridged it: the administration block spans the street and ties the wings together.',
-      climate: 'Temperate and often overcast (Köppen Cfb)', wind: [[240, 'SW to W']], windSrc: 'Leipzig/Halle airport, 50 km away, 2019–2023: winds mostly from the south-west to west, often from the south in winter.', sun: 'N', why: 'A new home for a design school pushed out of Weimar.',
-      response: 'The workshops got three storeys of glass for steady, even daylight. The price was single glazing that overheated in summer and lost heat in winter, a problem later curtain-wall buildings had to solve.',
+    lloyds: {
+      style: 'High-tech', span: [1965, 2025], designed: 1978, built: [1978, 1986], client: 'Lloyd’s of London',
+      styleNote: 'Structure and services on show. High-tech architects treated buildings like machines: exposed frames, pipes and lifts, made from industrial parts so they can be changed over time.',
+      relatives: 'Centre Pompidou, Paris (1977), HSBC Building, Hong Kong (1986), the Leadenhall Building (2014)',
+      why: 'An insurance market that kept outgrowing its buildings.',
+      need: 'By the 1970s Lloyd’s, the insurance market, had outgrown its 1928 and 1958 buildings. It held a competition in 1978 for a building that could keep changing with the market for decades. Rogers answered with open floors around one central room and every service pushed outside, where it could be replaced.',
+      site: 'A tight, irregular plot at Lime Street and Leadenhall Street, in the City of London’s insurance district, where the 1928 Lloyd’s building stood. Its Leadenhall Street entrance was kept. Six service towers fill the awkward edges of the plot, so the main block stays a clean rectangle.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N',
+      response: 'A barrel-vaulted glass roof floods the 60 m atrium with daylight. The exposed services weather fast in London’s damp air, and upkeep became so costly that Lloyd’s considered leaving in 2014.',
+      facts: [['Client', 'Lloyd’s of London'], ['Architect', 'Richard Rogers & Partners'], ['Engineer', 'Arup (Peter Rice)'], ['Contractor', 'Bovis (management contract)'], ['Height', '88 m roof, 95 m with cranes'], ['Floors', '14'], ['Lifts', '12 external glass lifts, 2 internal'], ['Cost', '£75 million'], ['Opened', '18 November 1986, by Queen Elizabeth II'], ['Listing', 'Grade I, 2011'], ['Nearest stations', 'Bank, Monument, Aldgate']],
       decisions: [
-        ['Glass curtain wall', 'The facade hangs in front of a concrete frame, so the wall carries no load and can be almost all glass. Workshops get light from floor to ceiling, and overheat in summer.', [330, 300], 'site'],
-        ['A corner without a column', 'The frame stops short of the edge, so the glass wraps the corner without a break. Transparency replaces the solid corner.', [592, 250]],
-        ['The building as its own sign', 'The vertical BAUHAUS lettering is built into the facade in a plain sans serif. Typography becomes part of the architecture.', [780, 300]],
-        ['A floating block', 'A recessed, darker basement makes the white volume above seem to hover off the ground.', [300, 575]],
-        ['Three wings, no front', 'Workshops, a vocational school and a block of 28 student studios turn around the bridge like a pinwheel. There is no main facade.', null, 'circulation'],
+        ['Services on the outside', { intent: 'Keep the trading floors clear and adaptable for decades.', move: 'Stairs, lifts, toilets, ducts and pipes moved into six towers around the outside.', result: 'Open floors inside; services can be replaced without disturbing the offices.' }, [365, 230], 'circulation'],
+        ['One room at the centre', { intent: 'Keep the whole market together, as Lloyd’s had always traded in one Room.', move: 'A 60 m atrium over the Underwriting Room, with galleries around it linked by escalators.', result: 'Underwriters on the lower galleries look straight down into the Room.' }, [460, 330], 'circulation'],
+        ['Glass lifts on the facade', { intent: 'Move people up without cutting holes in the floors.', move: '12 external glass lifts on the service towers, the first of their kind in the UK.', result: 'Circulation becomes part of the facade you see from the street.' }, null, 'circulation'],
+        ['A frame that can change', { intent: 'Let Lloyd’s grow or shrink floor by floor.', move: 'Modular floors where partitions can be added or removed.', result: 'The same building has housed the market since 1986.' }, null, 'materials'],
+        ['Old and new together', { intent: 'Keep the institution’s memory.', move: 'The 1928 Leadenhall Street entrance kept; the 1763 Adam Room rebuilt on the 11th floor.', result: 'Listed Grade I in 2011, the youngest building to receive that grade at the time.' }, null, 'style'],
       ],
-      materials: [['Structure', 'Reinforced concrete frame'], ['Walls', 'White-rendered infill'], ['Glazing', 'Steel-framed single glass'], ['Roof', 'Flat, usable terraces']],
-      timeline: [[1919, 'Bauhaus founded in Weimar'], [1925, 'School moves to Dessau; building starts'], [1926, 'Opens on 4 December', 1], [1932, 'Closed by the Nazi-led city council'], [1976, 'First major restoration'], [1996, 'UNESCO World Heritage']],
-      plan: 'pinwheel', oriented: false,
+      materials: [['Structure', 'Reinforced concrete frame'], ['Services', 'Six steel-clad service towers'], ['Roof', 'Barrel-vaulted glass over the atrium'], ['Lifts', '12 external glass lifts']],
+      timeline: [[1928, 'Earlier Lloyd’s building opens on the site'], [1978, 'Competition; Rogers commissioned'], [1986, 'Opened by Queen Elizabeth II, 18 November', 1], [2011, 'Listed Grade I'], [2013, 'Sold to Ping An for £260 million']],
+      plan: 'lloyds', oriented: false,
     },
-    fallingwater: {
-      style: 'Organic architecture', span: [1900, 1959], designed: 1935, built: [1936, 1939], client: 'Kaufmann family',
-      styleNote: 'Frank Lloyd Wright believed a building should grow out of its site: local materials, strong horizontals, and rooms that open straight onto nature.',
-      relatives: 'Robie House (1910), Taliesin West (1937), Guggenheim New York (1959)',
-      need: 'Edgar J. Kaufmann Sr., a Pittsburgh department-store owner, wanted a weekend house for his family at their camp on Bear Run. They expected a house with a view of the waterfall they loved. Wright put it on top of the falls instead, so they would live with the water rather than look at it.',
-      site: 'A wooded rural valley in the Laurel Highlands of western Pennsylvania, far from any town grid. There was no urban zoning to answer to. The real constraints were the rock ledges and the stream, and the house is anchored to the boulders beside the falls.',
-      climate: 'Humid continental, cold snowy winters (Köppen Dfb)', wind: [[210, 'SSW to SW']], windSrc: 'Latrobe airport, about 40 km away, 2019–2023: winds mostly from the south-south-west, calm 43% of the time. The wooded valley shelters the house further.', sun: 'N', why: 'A weekend house for a family who loved a waterfall.',
-      response: 'Deep concrete overhangs shade the glass in summer and let low winter sun in. The stream and forest cool the terraces, and thick stone walls hold warmth.',
+    canada: {
+      style: 'Postmodernism', span: [1975, 2005], designed: 1987, built: [1988, 1991], client: 'Olympia & York',
+      styleNote: 'A modern steel tower given a classical silhouette: a clear base, shaft and crown, finished with a pyramid.',
+      relatives: 'Petronas Towers (1998) and 181 West Madison, Chicago (1990), both by Pelli',
+      why: 'A second financial centre, built on closed docks.',
+      need: 'London’s docks had closed, and the City had little room for the huge trading floors banks wanted in the 1980s. Developers Olympia & York bought the Canary Wharf plans in 1987 to build a new business district, with this tower at its centre.',
+      site: 'Canada Square, on the former West India Docks in the Isle of Dogs, east of the City. The tower stands on 222 piles and a 4 m concrete raft set into the old dock. Five floors were taken off the original design to keep clear of London City Airport’s flight paths.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N',
+      response: 'Open water around the docks exposes the tower to wind from every side. Stainless-steel cladding stands up to the weather, and the pyramid carries an aircraft warning beacon, rare on UK buildings.',
+      facts: [['Developer', 'Olympia & York'], ['Architect', 'César Pelli & Associates, with Adamson Associates and Frederick Gibberd Coombes & Partners'], ['Contractors', 'Sir Robert McAlpine with EllisDon; later Lehrer McGovern'], ['Height', '235 m'], ['Floors', '50'], ['Lifts', '37'], ['Steel', 'About 27,500 t, 500,000 bolts'], ['Topped out', '8 November 1990'], ['Opened', '26 August 1991, by the Duke of Edinburgh'], ['Record', 'UK’s tallest building, 1990–2012'], ['Nearest stations', 'Canary Wharf (Jubilee, Elizabeth line), DLR']],
       decisions: [
-        ['Cantilevered terraces', 'Reinforced-concrete trays reach out over the stream with no posts below. They sagged over the decades and were strengthened with post-tensioned steel cables in 2001–02.', [700, 215], 'materials'],
-        ['A stone core', 'Sandstone from a quarry reopened nearby forms the vertical spine and chimney. The terraces balance off it.', [505, 62]],
-        ['Falls under the living room', 'The waterfall runs directly beneath the house, and you hear it in every room.', [770, 370]],
-        ['Glass set into stone', 'Metal window frames painted Cherokee red, set directly into the stone walls, so corners open onto the forest.', [488, 150]],
-        ['The rock left in place', 'The boulder the family used to sit on was kept and breaks through the living-room floor at the hearth.', null],
+        ['A crown you can find', { intent: 'Give a brand-new district a landmark visible for miles.', move: 'A 40 m stainless-steel pyramid with an aircraft warning beacon.', result: 'The tower became the emblem of Canary Wharf.' }, [168, 60], 'style'],
+        ['Stainless-steel skin', { intent: 'A durable, bright facade that reads as modern finance.', move: 'Stainless-steel cladding with a textured finish across the whole tower.', result: 'The tower shifts with the light and needs little upkeep.' }, [168, 330], 'materials'],
+        ['Built on the dock', { intent: 'Carry a 235 m tower on soft dock ground.', move: '222 piles driven 23 m deep under a 4 m concrete raft.', result: 'Opened the old docks to tall buildings.' }, null, 'materials'],
+        ['A lobby of marble', { intent: 'Make arriving feel like an occasion.', move: 'An 11 m high lobby lined with about 8,000 m² of marble.', result: 'A grand entrance for thousands of workers a day.' }, null, 'circulation'],
+        ['Cut for the planes', { intent: 'Stay clear of London City Airport’s flight paths.', move: 'Five floors removed from the 55-storey design.', result: '50 floors, 235 m.' }, null, 'site'],
       ],
-      materials: [['Structure', 'Reinforced concrete cantilevers'], ['Walls', 'Locally quarried sandstone'], ['Windows', 'Steel, Cherokee red'], ['Finish', 'Ochre-painted concrete']],
-      timeline: [[1934, 'The Kaufmanns meet Wright'], [1935, 'Wright draws the design'], [1936, 'Construction starts'], [1937, 'Family moves in', 1], [1939, 'Guest house completed'], [1963, 'Given to the Western Pennsylvania Conservancy'], [2002, 'Cantilevers reinforced with post-tensioning'], [2019, 'UNESCO World Heritage']],
-      plan: 'stream', oriented: false,
+      materials: [['Structure', 'About 27,500 t of British steel'], ['Skin', 'Stainless-steel cladding'], ['Crown', '40 m stainless-steel pyramid'], ['Base', '222 piles, 4 m concrete raft']],
+      timeline: [[1987, 'Olympia & York buy the Canary Wharf plans'], [1988, 'Construction starts'], [1990, 'Becomes the UK’s tallest building; topped out in November'], [1991, 'Opened 26 August', 1], [1992, 'Olympia & York goes into administration'], [2012, 'The Shard takes the height record']],
+      plan: 'canada', oriented: false,
     },
-    brasilia: {
-      style: 'Brazilian Modernism', span: [1936, 1975], designed: 1958, built: [1958, 1970], client: 'Federal government',
-      styleNote: 'Concrete set free into curves. Niemeyer pushed reinforced concrete toward sculpture, light and flowing, made for a tropical sun.',
-      relatives: 'Palácio da Alvorada (1958), National Congress (1960), Pampulha church (1943)',
-      need: 'Brazil moved its capital from Rio de Janeiro to a new planned city in the interior to open up the centre of the country. The capital needed a cathedral, and Niemeyer was asked for one that felt new, not a copy of European Gothic.',
-      site: 'Lúcio Costa’s Pilot Plan zones Brasília strictly: government buildings along the Monumental Axis, housing in residential superblocks. The cathedral sits on the Monumental Axis beside the Ministries Esplanade, the civic spine of the city.',
-      climate: 'Tropical savanna with a long dry season (Köppen Aw)', wind: [[90, 'E']], windSrc: 'Brasília airport, 2019–2023: winds mostly from the east and east-north-east all year.', sun: 'S', why: 'A cathedral for a brand-new capital.',
-      response: 'A reflecting pool surrounds the cathedral, adding moisture to dry-season air and throwing light onto the glass. Most of the nave sits below ground level, where it stays cooler.',
+    gherkin: {
+      style: 'High-tech', span: [1965, 2025], designed: 1999, built: [2001, 2003], client: 'Swiss Re',
+      styleNote: 'Engineering as expression. Later high-tech towers like this one use the structure itself, here a diagonal grid, as the architecture.',
+      relatives: 'City Hall, London (2002) and Hearst Tower, New York (2006), both by Foster + Partners',
+      why: 'A new head office on a bomb-damaged site.',
+      need: 'In 1992 an IRA bomb badly damaged the Baltic Exchange on this site. A proposed 386 m Millennium Tower was dropped over its scale and its effect on flight paths. Swiss Re then commissioned Foster + Partners in 1999 to design its UK head office.',
+      site: 'St Mary Axe in the City’s insurance quarter. The round, tapering plan takes up less of the site at ground level than a square tower would, leaving room for a public plaza at its foot. Planning permission was granted by Deputy Prime Minister John Prescott in 2000.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N',
+      response: 'Gaps in each floor line up into six shafts that work as natural ventilation, with firebreaks every sixth floor, and the double-layered glazing traps air as insulation. It was designed to use about half the energy of a similar tower, though partitions later added by tenants stopped the shafts working as intended.',
+      facts: [['Client', 'Swiss Re'], ['Architect', 'Foster + Partners'], ['Engineer', 'Arup'], ['Contractor', 'Skanska'], ['Height', '180 m'], ['Floors', '41'], ['Floor area', '64,470 m²'], ['Cost', '£138 million, plus £90.6 million for the land'], ['Opened', '28 April 2004'], ['Award', 'RIBA Stirling Prize 2004'], ['Nearest stations', 'Aldgate, Liverpool Street']],
       decisions: [
-        ['Sixteen identical columns', 'Curved concrete columns of about 90 tonnes each form a hyperboloid. Repeating one shape made a radical form buildable.', [300, 455]],
-        ['The crown', 'The columns meet in a ring and flare out again above it, reading as hands raised to the sky.', [600, 250]],
-        ['Glass between the ribs', 'The gaps are glazed, so the nave is lit from every side. Marianne Peretti’s stained glass was added in 1990.', [500, 560]],
-        ['Enter through darkness', 'Visitors go down a dim tunnel under the pool and come up into the bright nave.', null, 'circulation'],
+        ['A diagrid skin', { intent: 'Make the tower rigid without heavy columns inside.', move: 'A fully triangulated steel grid around the perimeter, designed by Arup.', result: 'Open floors, and the diamond pattern you see.' }, [330, 190], 'materials'],
+        ['Spiralling lightwells', { intent: 'Bring daylight and air deep into a round plan.', move: 'Each floor turned five degrees, so six triangular voids spiral up the tower.', result: 'Natural ventilation shafts and views between floors.' }, [255, 80], 'site'],
+        ['A tapered, rounded form', { intent: 'Fit a large building on a tight City site without walling in the street.', move: 'A form that swells in the middle and narrows at the base and top.', result: 'More open ground for a public plaza.' }, [218, 330], 'site'],
+        ['A glass lens on top', { intent: 'Give the top of the building to people, not machinery.', move: 'A curved glass cap over a bar on the 40th floor; its lift is pushed from below.', result: 'The building’s only curved glass, with 360° views.' }, null, 'circulation'],
       ],
-      materials: [['Structure', 'Precast concrete columns'], ['Form', 'Hyperboloid of revolution'], ['Skin', 'Glass, stained glass from 1990'], ['Setting', 'Reflecting pool']],
-      timeline: [[1956, 'President Kubitschek orders a new capital'], [1957, 'Lúcio Costa wins the city plan'], [1958, 'Construction begins in September'], [1960, 'Structure done; Brasília inaugurated'], [1970, 'Cathedral dedicated', 1], [1990, 'Stained glass by Marianne Peretti']],
-      plan: 'ring', oriented: false,
+      materials: [['Structure', 'Steel diagrid and central core'], ['Skin', 'Flat glass panels, double-layered'], ['Top', 'Curved glass lens'], ['Floor area', '64,470 m² over 41 floors']],
+      timeline: [[1992, 'IRA bomb damages the Baltic Exchange'], [1996, 'A 386 m Millennium Tower is proposed, then dropped'], [1999, 'Foster + Partners win the design'], [2000, 'Planning permission granted'], [2001, 'Construction starts'], [2004, 'Opens 28 April; wins the Stirling Prize', 1]],
+      plan: 'gherkin', oriented: false,
     },
-    sydney: {
-      style: 'Expressionist modernism', span: [1950, 1975], designed: 1957, built: [1959, 1973], client: 'NSW government',
-      styleNote: 'Modernism with feeling. Sculptural forms that read as sails, shells or wings instead of boxes.',
-      relatives: 'TWA Flight Center (1962), Berlin Philharmonie (1963)',
-      need: 'Sydney had no proper venue for opera and large concerts. In 1955 the New South Wales government launched an international competition for a performing arts centre on Bennelong Point, and paid for much of it with a state lottery.',
-      site: 'Bennelong Point, a peninsula in Sydney Harbour that once held a tram depot. Water on three sides, the Royal Botanic Garden to the east and the city to the south. The building is seen from every side, and from above, so it has no back.',
-      climate: 'Humid subtropical, mild winters (Köppen Cfa)', wind: [[45, 'NE sea breeze, summer'], [270, 'W, winter']], windSrc: 'Bureau of Meteorology data via City of Sydney wind studies: north-east sea breezes on summer afternoons, westerlies in winter. Southerly changes also bring strong summer gusts.', sun: 'S', why: 'A growing city with no proper stage for opera.',
-      response: 'The tiles are glazed to be self-cleaning, so rain and salt spray keep them bright. The podium faces the city, and the glass walls at the open ends of the shells face the harbour and the summer sea breeze.',
+    shard: {
+      style: 'Neo-futurism', span: [1990, 2025], designed: 2003, built: [2009, 2012], client: 'Sellar Property Group',
+      styleNote: 'Expressive, technology-driven forms that read as sculpture on the skyline, built with advanced glass and structure.',
+      relatives: 'The New York Times Building (2007), Centre Pompidou (1977), both by Piano',
+      why: 'Density on top of a transport hub.',
+      need: 'In 1998 developer Irvine Sellar set out to replace the 1975 Southwark Towers next to London Bridge station. Piano proposed a spire that tapers as it rises, so it takes little ground and narrows as the uses need less space.',
+      site: 'Directly beside and above London Bridge station, served by National Rail and the Jubilee and Northern lines. Heritage bodies including English Heritage objected; a public inquiry sat in 2003 and consent followed that November.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N', oriented: true,
+      response: 'A double-skin facade of extra-white glass with internal blinds that react to daylight. Vents in the gaps between the glass planes ventilate winter gardens, and a combined heat and power plant serves the tower.',
+      facts: [['Developer', 'Sellar Property Group; the State of Qatar owns 95%'], ['Architect', 'Renzo Piano Building Workshop, with Adamson Associates'], ['Height', '309.6 m'], ['Storeys', '95 (72 habitable)'], ['Lifts', '36'], ['Glass', '11,000 panes, 56,000 m²'], ['Cost', '£435 million (contract)'], ['Inaugurated', '5 July 2012'], ['Viewing deck', 'Opened 1 February 2013, 244 m up'], ['Nearest station', 'London Bridge']],
       decisions: [
-        ['One sphere, many shells', 'Utzon’s winning sketch had no buildable geometry. In 1961 he found one: every shell is cut from the surface of the same sphere, so the ribs could be precast from shared moulds.', [300, 255]],
-        ['A tiled skin', 'Over a million glossy and matte tiles, laid in chevrons, catch the changing light off the water.', [560, 280]],
-        ['The podium', 'A massive platform lifts the shells above the harbour. Utzon credited the Maya platforms he saw in Mexico in 1949, and the hollow podium hides the backstage spaces.', [330, 372], 'circulation'],
-        ['Glass mouths', 'Folded glass walls close the open ends of the shells and frame the harbour.', [222, 312]],
-        ['The cost of ambition', 'Budgeted at A$7 million, it cost A$102 million. Utzon resigned in 1966, and the interiors were finished by others.', null],
+        ['Eight sloping planes', { intent: 'Make a very tall tower feel light against the sky.', move: 'Eight leaning planes of extra-white glass that stop short of meeting at the top.', result: 'The tower takes on the colour of the sky and ends in open fragments.' }, [760, 190], 'materials'],
+        ['A town stacked vertically', { intent: 'Mix uses so the tower is busy day and night.', move: 'Offices low down, restaurants on 31–33, a hotel on 34–52, homes on 53–65, the View on 68–72.', result: 'Floors shrink as the uses need less space.' }, [748, 320], 'circulation'],
+        ['Built at a station', { intent: 'Put density where the transport already is.', move: 'The tower stands at London Bridge station.', result: 'Workers and visitors can arrive by train or Tube at its foot.' }, [745, 420], 'site'],
+        ['Built top-down', { intent: 'Save time on a cramped, busy site.', move: 'Core and basement built at the same time, a first in the UK.', result: 'A concrete core with post-tensioned floors and 400 mm of sway tolerance.' }, null, 'materials'],
       ],
-      materials: [['Structure', 'Precast concrete ribs'], ['Roof', '1,056,006 Swedish tiles'], ['Base', 'Granite-clad podium'], ['Glazing', 'Folded glass walls']],
-      timeline: [[1955, 'Competition launched'], [1957, 'Utzon wins'], [1959, 'Construction starts'], [1961, 'The spherical solution'], [1966, 'Utzon resigns'], [1973, 'Opened by Queen Elizabeth II', 1], [2007, 'UNESCO World Heritage']],
-      plan: 'point', oriented: true,
+      materials: [['Structure', 'Concrete core, post-tensioned floors'], ['Skin', '11,000 panes of extra-white glass'], ['Facade', 'Double skin with internal blinds'], ['Energy', 'Combined heat and power plant']],
+      timeline: [[1998, 'Sellar plans to replace Southwark Towers'], [2003, 'Public inquiry; consent in November'], [2008, 'Qatari consortium buys an 80% stake'], [2009, 'Full construction begins in March'], [2012, 'Topped out in March; inaugurated 5 July', 1], [2013, 'The View opens to the public']],
+      plan: 'shard',
     },
-    lotus: {
-      style: 'Expressionist modernism', span: [1950, 2000], designed: 1977, built: [1980, 1986], client: 'Bahá’í community',
-      styleNote: 'The building is the symbol. Thin modern shells shape a half-open lotus that people of many faiths recognise.',
-      relatives: 'Sydney Opera House (1973), Bahá’í temple in Santiago (2016)',
-      need: 'Every Bahá’í House of Worship must have nine sides and a central dome, and be open to people of all religions. The temple for the Indian subcontinent needed a form that Hindus, Buddhists, Jains and others would all recognise. The lotus is sacred to many of them.',
-      site: 'A 26.6-acre site at Bahapur in south Delhi, bought in 1954 when it was on the edge of the city. Gardens and nine pools fill the land around the temple and buffer it from a dense, busy neighbourhood.',
-      climate: 'Hot summers and monsoon rain (Köppen Cwa)', wind: [[270, 'W, most of the year'], [90, 'E, monsoon']], windSrc: 'Delhi airport, 2019–2023: westerly winds most of the year, easterly in the monsoon months; calm about a quarter of the time.', sun: 'N', why: 'A temple open to every faith, with nine sides.',
-      response: 'Vents at basement level and at the crown of the dome make the building work as a chimney. Air drawn in passes over the pools, and warm air rises out through the top, so the hall stays comfortable without air conditioning.',
+    leadenhall: {
+      style: 'High-tech', span: [1965, 2025], designed: 2004, built: [2011, 2014], client: 'British Land and Oxford Properties',
+      styleNote: 'Structure and services on show, as at Lloyd’s across the street: the bracing, lifts and machinery are part of the facade.',
+      relatives: 'Lloyd’s building (1986), Centre Pompidou (1977)',
+      why: 'A tall tower that had to keep St Paul’s in view.',
+      need: 'British Land wanted large, column-free floors in the City’s insurance district, opposite Lloyd’s. The planning test was strict: the tower could not intrude on the protected view of St Paul’s Cathedral from Fleet Street.',
+      site: '122 Leadenhall Street, opposite the Lloyd’s building. The City of London approved the plans in May 2005. After the site was cleared, the 2008 financial crisis stalled the project until December 2010.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N',
+      response: 'The sloping face is fully glazed and shows the bracing behind. The flat side holds the lifts and plant behind glass, with bright orange counterweights and motors on show. A 30 m high public space at the base continues the street plaza under the tower.',
+      facts: [['Developers', 'British Land and Oxford Properties'], ['Architect', 'Rogers Stirk Harbour + Partners'], ['Engineer', 'Arup'], ['Contractor', 'Laing O’Rourke'], ['Height', '225 m'], ['Floors', '48'], ['Floor area', '84,424 m²'], ['Cost', '£1.15 billion'], ['Opened', 'July 2014'], ['Nearest stations', 'Bank, Monument, Aldgate']],
       decisions: [
-        ['Twenty-seven petals', 'Three rings of nine: entrance petals, outer petals, and inner petals that rise to enclose the hall.', [440, 248]],
-        ['Petals as doors', 'The outer ring curls outward to make nine entrances, one on each side.', [690, 482]],
-        ['Concrete shells, marble skin', 'Each petal is a thin reinforced-concrete shell clad in white marble from Mount Pentelicus, Greece.', [330, 330], 'materials'],
-        ['Nine pools', 'Pools ring the base like a lotus’s leaves floating on water, and incoming air passes over them.', [470, 604], 'site'],
+        ['A wedge for St Paul’s', { intent: 'Protect the view of St Paul’s from Fleet Street.', move: 'The south face slopes back as the tower rises.', result: 'The “Cheesegrater” profile.' }, [400, 140], 'site'],
+        ['A megaframe, no core', { intent: 'Free the floors from a central concrete core.', move: 'A perimeter steel megaframe, designed by Arup, gives the tower its stability.', result: 'Open floors; the tallest building of its kind in the world.' }, [325, 320], 'materials'],
+        ['Services on the flat side', { intent: 'Keep lifts and plant out of the views and daylight.', move: 'A separate glazed service core on the flat face.', result: 'Lifts and orange counterweights become part of the facade.' }, null, 'circulation'],
+        ['A public room at the base', { intent: 'Give the ground floor back to the public.', move: 'A 30 m high open space under the tower, continuing the plaza.', result: 'A covered public space beneath an office tower.' }, null, 'circulation'],
       ],
-      materials: [['Structure', 'Reinforced concrete shells'], ['Skin', 'Pentelic marble, Greece'], ['Plan', 'Nine sides, central hall'], ['Cooling', 'Pools and stack ventilation']],
-      timeline: [[1954, 'Land bought at Bahapur'], [1976, 'Fariborz Sahba selected as architect'], [1977, 'Design approved; foundation stone laid'], [1980, 'Construction starts in April'], [1986, 'Dedicated on 24 December', 1]],
-      plan: 'nine', oriented: false,
+      materials: [['Structure', 'Perimeter steel megaframe'], ['Skin', 'Glass over exposed bracing'], ['Core', 'Glazed service core on the flat side'], ['Base', '30 m high public space']],
+      timeline: [[2004, 'Planning application submitted'], [2005, 'Approved in May'], [2008, 'Delayed by the financial crisis'], [2010, 'Project revived in December'], [2013, 'Steelwork topped out'], [2014, 'Opens in July', 1]],
+      plan: 'leadenhall', oriented: false,
     },
-    bilbao: {
-      style: 'Deconstructivism', span: [1982, 2010], designed: 1991, built: [1993, 1997], client: 'Basque government',
-      styleNote: 'The box broken open. Fragmented, curving forms that computer design made possible to draw, price and build.',
-      relatives: 'Walt Disney Concert Hall (2003), Dancing House, Prague (1996)',
-      need: 'Bilbao’s shipyards and steel mills were closing and the city was declining. The Basque government paid for a museum that the Guggenheim Foundation would run, betting that a landmark would bring visitors and investment. It worked so well that planners now speak of the Bilbao effect.',
-      site: 'Former docks and industrial land at Abandoibarra, on the south bank of the Nervión where the city grid meets the river. La Salve bridge, a main road into the city, crosses the site, so the building runs under it and ends in a tower on the far side.',
-      climate: 'Mild, rainy Atlantic climate (Köppen Cfb)', wind: [[90, 'E, most frequent'], [305, 'WNW to NW, summer']], windSrc: 'Bilbao airport, 2019–2023: easterly winds most often, north-westerlies in summer. The strongest Atlantic winds come from the north-west.', sun: 'N', why: 'A declining port city betting on a landmark.',
-      response: 'Gehry tested stainless steel, which looked dull under Bilbao’s grey skies. Titanium kept a warm, shifting glow in rain and cloud. The river front faces north, so the curves pick up soft reflected light instead of glare.',
+    walkie: {
+      style: 'Neo-futurism', span: [1990, 2025], designed: 2006, built: [2009, 2014], client: 'Land Securities and Canary Wharf Group',
+      styleNote: 'Expressive, technology-driven forms that make a strong mark on the skyline.',
+      relatives: 'Vdara Hotel, Las Vegas (2009), also by Viñoly; the Shard (2012)',
+      why: 'More space up high, with a public garden on top.',
+      need: 'Land Securities and Canary Wharf Group replaced a 1968 office block with a tower that grows wider as it rises, putting more floor area near the top. A public garden at the summit was part of the case for approving it.',
+      site: 'Fenchurch Street, on the eastern edge of the City’s tower cluster near the Tower of London. It was cut from nearly 200 m to 160 m over its impact on St Paul’s and the Tower, approved in 2006, called in for a public inquiry, and granted full permission in 2007.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N',
+      response: 'In summer 2013 the concave south face focused sunlight onto streets to the south: 91 °C to 117 °C was measured at street level and a parked car was damaged. A permanent shading awning was added in 2014. After completion, complaints about strong wind at street level followed in 2015.',
+      facts: [['Developers', 'Land Securities, Canary Wharf Group'], ['Architect', 'Rafael Viñoly (executive architect Adamson Associates)'], ['Engineer', 'Halcrow Yolles'], ['Contractor', 'Canary Wharf Contractors'], ['Height', '160 m'], ['Storeys', '38, including the Sky Garden'], ['Office area', '62,100 m²'], ['Cost', 'Over £200 million'], ['Completed', 'August 2014'], ['Sky Garden', 'Opened January 2015, free to visit'], ['Award', 'Carbuncle Cup 2015'], ['Nearest station', 'Monument']],
       decisions: [
-        ['Titanium skin', 'About 33,000 titanium plates, each about 0.4 mm thick, ripple slightly as they are fixed, so the surface flickers like fish scales.', [690, 180], 'site'],
-        ['Under the bridge', 'Instead of avoiding La Salve bridge, the long gallery passes beneath it and ends in a tower beyond, tying road and building together.', [150, 250], 'circulation'],
-        ['The glass flower', 'A 50-metre atrium, topped by a metal flower, lights the galleries that wind around it.', [620, 86]],
-        ['Stone for the boxes', 'Rectangular galleries are clad in Spanish limestone and the curved ones in titanium, so the plan shows on the outside.', [930, 300]],
-        ['Drawn in aerospace software', 'CATIA, a program for designing jets, turned Gehry’s paper models into buildable steel frames and cut panels.', null],
+        ['Wider at the top', { intent: 'Put more floor area where views are best.', move: 'A top-heavy form that bulges outward as it rises.', result: 'Larger upper floors and the “Walkie-Talkie” silhouette.' }, [470, 260], 'site'],
+        ['The Sky Garden', { intent: 'Give the public a reason to support a tall tower.', move: 'A three-storey garden, terraces and restaurants at the top, free to visit, with its own entrance on Philpot Lane.', result: 'One of London’s most visited viewpoints.' }, [420, 40], 'circulation'],
+        ['A lesson in sunlight', { intent: 'A curved, fully glazed south face.', move: 'The concave curve focused reflected sun onto the street in 2013.', result: 'A permanent shading awning was added in 2014.' }, null, 'site'],
+        ['Double-deck lifts in two zones', { intent: 'Move a whole tower of office workers quickly.', move: '14 double-deck lifts: seven up to the 20th floor, seven above.', result: 'Fewer lift shafts for the number of people.' }, null, 'circulation'],
       ],
-      materials: [['Structure', 'Steel frame'], ['Skin', '~33,000 titanium sheets'], ['Stone', 'Spanish limestone'], ['Glazing', 'Glass curtain walls']],
-      timeline: [[1991, 'Basque government signs with the Guggenheim'], [1991, 'Gehry selected'], [1993, 'Construction starts'], [1997, 'Opens in October', 1]],
-      plan: 'river', oriented: true,
+      materials: [['Structure', 'Concrete core, steel frame'], ['Skin', 'Glass with solar shading east and west'], ['Fix', 'Shading awning on the south face, 2014'], ['Top', 'Three-storey Sky Garden']],
+      timeline: [[2006, 'Approved at a reduced height'], [2007, 'Public inquiry rules for the developers'], [2009, 'Piling begins'], [2012, 'Concrete core and steel topped out'], [2013, 'Reflected sunlight damages a car on Eastcheap'], [2014, 'Completed in August; shading added', 1], [2015, 'Sky Garden opens; Carbuncle Cup']],
+      plan: 'walkie', oriented: false,
     },
-    petronas: {
-      style: 'Postmodernism', span: [1975, 2005], designed: 1991, built: [1993, 1998], client: 'Petronas',
-      styleNote: 'Modern skyscraper technology dressed in local and historic references, here the geometry of Islamic art.',
-      relatives: 'Jin Mao Tower (1999), Taipei 101 (2004)',
-      need: 'Malaysia’s national oil company needed a headquarters, and the government wanted a landmark that showed a modern, confident country. Pelli’s design draws on motifs from Islamic art, reflecting the country’s Muslim identity.',
-      site: 'The towers anchor Kuala Lumpur City Centre, a masterplan on the former Selangor Turf Club racecourse. A large share of the land became KLCC Park, designed by Roberto Burle Marx as his only project in Asia, and the Suria KLCC mall fills the podium.',
-      climate: 'Hot and humid all year, heavy rain (Köppen Af)', wind: [[225, 'SW monsoon, May–Sep'], [45, 'NE monsoon, Nov–Mar']], windSrc: 'These are Malaysia’s regional monsoons. At ground level in the city, winds are light and shift often; nearby airports record calm about a third of the time.', sun: 'EQ', why: 'A headquarters announcing a modern Malaysia.',
-      response: 'Stainless-steel sunshades and laminated glass cut solar heat on every floor. The setbacks shed wind as the towers rise, and very deep foundations deal with uneven rock below.',
+    bloomberg: {
+      style: 'Contemporary', span: [2000, 2025], designed: 2010, built: [2010, 2017], client: 'Bloomberg L.P.',
+      styleNote: 'Today’s office architecture: performance-led design where energy, wellbeing and how people meet shape the building as much as image does.',
+      relatives: 'Apple Park, Cupertino (2017) and Comcast Technology Center (2018), both by Foster + Partners',
+      why: 'A headquarters built to make people meet.',
+      need: 'Bloomberg wanted a European headquarters that works like its open newsrooms, where people see and bump into each other all day, and that sets a new standard for sustainable offices.',
+      site: 'A whole city block on Queen Victoria Street, on the site of Bucklersbury House, demolished in 2010. Digging revealed Roman London: the Temple of Mithras was returned close to its original spot and is open to the public as the London Mithraeum. The project also gave Bank station a new step-free entrance in 2018.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N',
+      response: 'Bronze fins on the sandstone facade shade the glass and help the building ventilate naturally. Rainwater from the roof flushes the vacuum toilets, and ceiling “petals” combine lighting, cooling and sound absorption.',
+      facts: [['Client', 'Bloomberg L.P.'], ['Architect', 'Foster + Partners'], ['Engineer', 'AKT II'], ['Contractor', 'Sir Robert McAlpine'], ['Cost', 'About £1 billion'], ['Staff', '4,000'], ['Facade', '9,600 t of Derbyshire sandstone'], ['Opened', 'October 2017'], ['Rating', 'BREEAM 98.5%'], ['Award', 'RIBA Stirling Prize 2018'], ['Nearest stations', 'Bank (new entrance 2018), Mansion House, Cannon Street']],
       decisions: [
-        ['An eight-pointed star', 'Each floor plan is based on the Rub el Hizb, two overlapping squares, with arcs in the corners. Sixteen columns stand at the star’s inner corners.', [640, 300], 'circulation'],
-        ['The skybridge', 'A 58 m, two-storey bridge at floors 41 and 42, 170 m up. It is not fixed at either end: it slides as the towers sway, on an arch with spherical bearings. It doubles as an escape route.', [512, 470], 'circulation'],
-        ['Tapering setbacks', 'The towers step in as they rise and finish in pinnacles that take them to 452 m.', [395, 20]],
-        ['Concrete, not steel', 'Importing steel was very expensive, so the towers use super-high-strength reinforced concrete: a 23 m square core and a ring of 16 columns.', [380, 350], 'materials'],
-        ['Two builders, one race', 'Each tower had its own contractor, Hazama for Tower 1 and a Samsung-led group for Tower 2.', null],
-        ['Moved for the rock', 'Tests found the site on the edge of a buried cliff, so the towers were moved 61 m. Concrete piles reach 60 to 114 m deep.', null],
+        ['The ramp', { intent: 'Turn moving between floors into a chance to meet.', move: 'A 210 m stepped, bronze-clad ramp that loops through the building’s full height.', result: 'People pass each other face to face instead of disappearing into lifts.' }, [450, 210], 'circulation'],
+        ['Ceiling petals', { intent: 'Put light, cooling and acoustics into one surface.', move: 'Custom aluminium “petals” across the ceilings, with 500,000 LEDs.', result: 'A calm, quiet open plan for 4,000 people.' }, [70, 70], 'materials'],
+        ['A street through the block', { intent: 'Restore an old route across the City.', move: 'Bloomberg Arcade between the two buildings follows part of the Roman Watling Street.', result: 'A public lane of restaurants through the site.' }, null, 'circulation'],
+        ['A breathing facade', { intent: 'Cut energy use in a deep office building.', move: 'A sandstone frame with bronze fins that shade and ventilate.', result: 'BREEAM 98.5%, the highest design-stage score for a major office.' }, null, 'site'],
+        ['The Vortex', { intent: 'Mark the change from street to workplace.', move: 'Three curved timber shells that twist into an oculus.', result: 'A sheltered threshold before glass lifts rise to the sixth-floor pantry.' }, null, 'circulation'],
       ],
-      materials: [['Structure', 'High-strength concrete'], ['Skin', 'Stainless steel and glass'], ['Base', 'Raft on piles up to 114 m'], ['Bridge', 'On sliding bearings']],
-      timeline: [[1991, 'Pelli wins the design competition'], [1993, 'Excavation starts in March'], [1996, 'Spires completed'], [1998, 'Ranked world’s tallest building', 1], [1999, 'Officially opened, 31 August'], [2004, 'Taipei 101 takes the title']],
-      plan: 'twins', oriented: false,
+      materials: [['Facade', '9,600 t Derbyshire sandstone'], ['Fins', 'Bronze, for shade and air'], ['Ramp', '210 m, bronze-clad'], ['Ceilings', 'Aluminium petals, 500,000 LEDs']],
+      timeline: [[1954, 'Temple of Mithras found on the site'], [2010, 'Bucklersbury House demolished; work begins in December'], [2017, 'Opens in October', 1], [2018, 'Stirling Prize; new Bank station entrance']],
+      plan: 'bloomberg', oriented: false,
+    },
+    coaldrops: {
+      style: 'Adaptive reuse', span: [1975, 2025], designed: 2014, built: [2016, 2018], client: 'Argent (King’s Cross)',
+      styleNote: 'Designing with what is already there: old industrial buildings kept, repaired and extended for a new life.',
+      relatives: 'Battersea Power Station (2022), Tate Modern (2000)',
+      why: 'Turning abandoned coal sheds into a place people go.',
+      need: 'King’s Cross was being rebuilt as a new neighbourhood. Its developer, Argent, needed shops and a reason to walk across the canal, and had two long Victorian coal sheds that were hard to use as they were.',
+      site: 'Between Regent’s Canal and the railway lands north of King’s Cross station. The eastern coal drops date from 1851 and the western from 1860; together they handled about 8 million tonnes of coal a year. Heatherwick was appointed in 2014 and the plans approved in December 2015.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N', oriented: true,
+      response: 'The new roof shelters part of the yard from London’s rain, so the space works as a street all year. Slate for the new roof came from the same Welsh quarry seam as the original.',
+      facts: [['Developer', 'Argent'], ['Architect', 'Heatherwick Studio'], ['Engineer', 'Arup'], ['Contractor', 'BAM Nuttall'], ['Cost', '£100 million'], ['Shops', '9,290 m², units of 15–1,800 m²'], ['New roof', '35 m span on 54 steel columns'], ['Opened', '26 October 2018'], ['Awards', 'RIBA National Award 2019'], ['Nearest station', 'King’s Cross St Pancras']],
+      decisions: [
+        ['The kissing roofs', { intent: 'Join two separate sheds into one place.', move: 'The inner roof slopes are stretched up until they meet.', result: 'A new glazed upper floor of about 1,900 m², spanning 35 m.' }, [420, 215], 'materials'],
+        ['Keep the Victorian fabric', { intent: 'Let the history stay visible.', move: 'Brick and iron kept; new slate from the original quarry seam.', result: 'Old and new read clearly side by side.' }, [830, 520], 'materials'],
+        ['A yard as a street', { intent: 'A shopping street people want to linger in.', move: 'The yard between the sheds stays open, partly covered by the new roof.', result: 'Public space with shops on two levels.' }, [420, 560], 'circulation'],
+        ['Small units', { intent: 'Attract independent shops, not only chains.', move: 'Units from 15 to 1,800 m².', result: 'A varied street of 9,290 m² of shops.' }, null, 'site'],
+      ],
+      materials: [['Original', 'Brick, wrought and cast iron'], ['New roof', 'Steel, on 54 columns'], ['Slate', 'From the original Welsh seam'], ['Upper floor', 'Two-storey glazed space']],
+      timeline: [[1851, 'Eastern coal drops built'], [1860, 'Western coal drops built'], [2014, 'Heatherwick appointed'], [2015, 'Plans approved in December'], [2016, 'Construction starts in February'], [2018, 'Opens 26 October', 1], [2019, 'RIBA National Award']],
+      plan: 'coaldrops',
+    },
+    bishopsgate: {
+      style: 'Contemporary', span: [2000, 2025], designed: 2015, built: [2016, 2020], client: 'AXA IM – Real Assets and Lipton Rogers',
+      styleNote: 'Today’s office architecture: towers designed around the people inside, with shared amenities and wellbeing given as much weight as the skyline.',
+      relatives: 'Hudson Yards, New York (2019), the Shard (2012)',
+      why: 'Finishing a site where a tower stalled at seven storeys.',
+      need: 'The Pinnacle, an earlier tower here, stalled in 2012 with only seven storeys of its concrete core built. A consortium led by AXA bought the site in 2015, removed the old core, and commissioned a simpler, bigger tower designed around the people who would work in it.',
+      site: 'At the heart of the City’s tall-building cluster on Bishopsgate. Its height was capped by Civil Aviation Authority limits linked to London City Airport’s flight paths and crane operations; earlier, taller schemes on the site were cut back.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N',
+      response: 'With up to 12,000 people inside, evacuation shaped the design. Engineers WSP developed a strategy that uses the passenger lifts to evacuate people in an emergency, rather than relying on stairs alone.',
+      facts: [['Developers', 'AXA IM – Real Assets, Lipton Rogers'], ['Architect', 'PLP Architecture'], ['Engineer', 'WSP'], ['Contractor', 'Multiplex'], ['Height', '278 m'], ['Floors', '62'], ['Office area', 'About 120,000 m²'], ['Occupancy', 'Up to 12,000 people'], ['Lifts', 'Double-deck lifts in three groups'], ['Viewing gallery', 'Horizon 22, floor 58, 254 m, free'], ['Completed', '2020'], ['Nearest stations', 'Liverpool Street, Bank']],
+      decisions: [
+        ['A vertical village', { intent: 'Make a 12,000-person office feel like a neighbourhood.', move: 'Shared spaces: a food market, a gym with a climbing wall, parking for over 1,000 bikes.', result: 'Amenities usually spread across a district, stacked in one tower.' }, [400, 400], 'circulation'],
+        ['Height set by the sky', { intent: 'Stay clear of London City Airport’s flight paths.', move: 'Height capped at 278 m under aviation limits.', result: 'The City’s tallest building, lower than the Shard.' }, [385, 80], 'site'],
+        ['Horizon 22', { intent: 'Give the public a view from the top.', move: 'A free viewing gallery on the 58th floor, 254 m up.', result: 'The highest viewing gallery in the UK.' }, [455, 165], 'circulation'],
+        ['Lifts for every day and emergencies', { intent: 'Move, and if needed evacuate, thousands of people.', move: 'Double-deck lifts in three groups, planned for lift-assisted evacuation.', result: 'Fewer, larger shafts and a faster way out.' }, null, 'circulation'],
+      ],
+      materials: [['Engineer', 'WSP, structure and services'], ['Skin', 'Glass curtain wall'], ['Lifts', 'Double-deck, three groups'], ['Offices', 'About 120,000 m²']],
+      timeline: [[2008, 'The Pinnacle begins on the site'], [2012, 'The Pinnacle stalls at seven storeys'], [2015, 'AXA-led group buys the site; old core removed'], [2016, 'Construction of 22 Bishopsgate begins'], [2020, 'Completed', 1]],
+      plan: 'bishopsgate', oriented: false,
+    },
+    battersea: {
+      style: 'Art Deco, reused', span: [1920, 1945], designed: 2012, built: [2014, 2022], client: 'S P Setia, Sime Darby, EPF',
+      styleNote: 'Industrial Art Deco: a power station designed as a monument, with fluted brick and the chimneys as columns. The restoration keeps that character and adds new uses inside.',
+      relatives: 'Bankside Power Station, now Tate Modern (by the same Giles Gilbert Scott), Coal Drops Yard (2018)',
+      why: 'Giving a dead landmark a new working life.',
+      need: 'The power station closed in 1983 and became one of London’s best-known ruins. A theme park and several office and housing schemes all failed. A Malaysian consortium bought it in 2012 to restore it as the heart of a new neighbourhood.',
+      site: 'On the south bank of the Thames at Nine Elms, a former industrial riverside opened up for homes and offices. The developers contributed £270 million to the Northern line extension; Battersea Power Station station opened in September 2021.',
+      climate: LDN_CLIMATE, wind: LDN_WIND, windSrc: LDN_WINDSRC, sun: 'N', oriented: true,
+      response: 'The chimneys’ steel reinforcement had corroded, so they were taken down and rebuilt like for like, finished in 2017. The restoration also built an energy centre that supplies the wider scheme.',
+      facts: [['Owners', 'S P Setia, Sime Darby, Employees Provident Fund'], ['Restoration architect', 'WilkinsonEyre'], ['Original', 'J. Theo Halliday; exterior by Giles Gilbert Scott'], ['Engineer', 'BuroHappold'], ['Contractor', 'Mace'], ['New steel', '24,000 t'], ['Uses', 'Apple offices, 140+ shops, 254 homes'], ['Listing', 'Grade II* (2007)'], ['Reopened', '14 October 2022'], ['Award', 'RIBA National Award 2024'], ['Nearest station', 'Battersea Power Station (Northern line, 2021)']],
+      decisions: [
+        ['Rebuild the chimneys', { intent: 'Keep the silhouette Londoners know.', move: 'Corroded chimneys taken down and rebuilt like for like.', result: 'Finished in 2017; one now holds Lift 109.' }, [470, 90], 'materials'],
+        ['Turbine halls as streets', { intent: 'Fill a huge industrial shell with daily life.', move: 'Turbine Halls A and B turned into multi-level shopping streets.', result: 'More than 140 shops, bars and restaurants.' }, [620, 360], 'circulation'],
+        ['Lift 109', { intent: 'Let the public share the building’s best view.', move: 'A glass lift inside the north-west chimney, entered from Turbine Hall A.', result: 'A 360° viewpoint 109 m above the river.' }, null, 'circulation'],
+        ['Offices in the boiler house', { intent: 'Anchor the scheme with a major employer.', move: 'New floors inserted into the old power station.', result: 'Apple’s London campus, about 500,000 sq ft.' }, null, 'circulation'],
+        ['Tube first', { intent: 'Make a riverside site easy to reach.', move: 'Developers helped fund the Northern line extension.', result: 'The station opened in 2021, a year before the building.' }, null, 'site'],
+      ],
+      materials: [['Original', 'Brick, 1929–1955'], ['New', '24,000 t of steelwork'], ['Chimneys', 'Rebuilt like for like, 2017'], ['Lift', 'Glass lift to 109 m']],
+      timeline: [[1929, 'Station A construction begins'], [1933, 'First electricity generated'], [1955, 'Station B in full service'], [1983, 'Power station closes'], [2007, 'Listing raised to Grade II*'], [2012, 'Malaysian consortium buys the site'], [2014, 'Restoration of the building begins'], [2021, 'Northern line extension opens'], [2022, 'Reopens 14 October', 1]],
+      plan: 'battersea',
     },
   };
 
@@ -623,39 +738,18 @@ html { scroll-behavior: smooth; }
   };
   const label = (x, y, t, anchor = 'middle') => `<text class="d-label" x="${x}" y="${y}" text-anchor="${anchor}">${t}</text>`;
   const PLANS = {
-    pinwheel: () => `<rect x="178" y="40" width="16" height="262" class="d-road"/>${label(186, 318, 'Road')}
-      <rect x="96" y="112" width="68" height="92" class="d-bld"/>${label(130, 104, 'Workshops')}
-      <rect x="150" y="122" width="72" height="18" class="d-bld2"/>${label(186, 156, 'Bridge', 'middle')}
-      <rect x="206" y="98" width="52" height="74" class="d-bld"/>${label(232, 90, 'School')}
-      <rect x="112" y="204" width="22" height="46" class="d-bld2"/>
-      <rect x="98" y="250" width="50" height="24" class="d-bld"/>${label(123, 290, 'Studios')}`,
-    stream: () => `<circle cx="110" cy="100" r="16" class="d-green"/><circle cx="235" cy="95" r="20" class="d-green"/><circle cx="260" cy="240" r="18" class="d-green"/><circle cx="90" cy="240" r="20" class="d-green"/>
-      <path d="M40,214 C100,196 150,226 200,208 S280,196 304,210 L304,232 C270,222 240,240 200,232 S110,222 40,238 Z" class="d-water"/>${label(268, 258, 'Bear Run')}
-      <rect x="168" y="112" width="20" height="56" class="d-bld2"/>
-      <rect x="120" y="140" width="112" height="34" class="d-bld"/>
-      <rect x="150" y="170" width="96" height="44" class="d-bld" opacity=".75"/>${label(196, 130, 'Stone core', 'start')}
-      ${label(198, 280, 'Terraces reach out over the falls')}
-      <rect x="112" y="64" width="34" height="18" class="d-bld2"/>${label(129, 58, 'Guest house')}`,
-    ring: () => { let t = ''; for (let i = 0; i < 16; i++) { const a = i * 22.5, [x1, y1] = polar(a, 42), [x2, y2] = polar(a, 58); t += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-width="5" stroke-linecap="round"/>`; }
-      return `<circle cx="${C}" cy="${C}" r="86" class="d-water"/>${label(C, 74, 'Reflecting pool')}<circle cx="${C}" cy="${C}" r="44" class="d-bld" opacity=".5"/>${t}
-        <rect x="164" y="214" width="12" height="52" fill="#1a1a1e"/>${label(C, 282, 'Ramp entrance')}
-        <rect x="262" y="160" width="10" height="10" class="d-bld"/>${label(267, 184, 'Bell tower')}`; },
-    point: () => `<circle cx="${C}" cy="${C}" r="${R - 6}" class="d-water"/>
-      <path d="M60,300 L60,236 C96,226 130,228 146,214 L150,140 C152,112 162,94 170,90 C178,94 188,112 190,140 L194,214 C214,226 244,226 282,236 L282,300 Z" class="d-road" style="fill:rgba(255,255,255,.14)"/>
-      <ellipse cx="240" cy="256" rx="36" ry="20" class="d-green"/>${label(244, 260, 'Botanic Garden')}
-      <rect x="148" y="176" width="44" height="40" class="d-bld2"/>
-      <ellipse cx="162" cy="150" rx="11" ry="32" class="d-bld"/><ellipse cx="180" cy="156" rx="9" ry="26" class="d-bld"/>
-      ${label(C, 66, 'Harbour')}${label(92, 176, 'Sydney Cove')}${label(250, 176, 'Farm Cove')}${label(C, 292, 'City')}`,
-    nine: () => { let t = ''; for (let i = 0; i < 9; i++) { const a = i * 40, [x, y] = polar(a, 84); t += `<circle cx="${x}" cy="${y}" r="13" class="d-water"/>`; const [p1x, p1y] = polar(a - 14, 30), [p2x, p2y] = polar(a + 14, 30), [tx, ty] = polar(a, 58); t += `<path d="M${p1x},${p1y} Q${tx},${ty} ${p2x},${p2y}" class="d-bld"/>`; }
-      return `<circle cx="${C}" cy="${C}" r="118" class="d-green"/>${t}<circle cx="${C}" cy="${C}" r="32" class="d-bld"/>${label(C, 312, 'Nine petals, nine pools, garden ring')}`; },
-    river: () => { let g = ''; for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) g += `<rect x="${86 + i * 34}" y="${236 + j * 30}" width="24" height="20" class="d-road" style="fill:rgba(255,255,255,.14)"/>`;
-      return `<path d="M30,92 C110,120 210,86 312,118 L312,160 C210,130 110,162 30,134 Z" class="d-water"/>${label(92, 100, 'Nervión river')}
-        <rect x="244" y="50" width="12" height="230" class="d-road" style="fill:rgba(255,255,255,.2)"/>${label(250, 296, 'La Salve bridge')}
-        <path d="M108,168 C120,146 160,150 176,160 C196,146 232,148 238,172 C246,196 220,214 188,210 C160,222 118,214 110,196 Z" class="d-bld"/>
-        <rect x="262" y="164" width="14" height="22" class="d-bld2"/>${label(269, 202, 'Tower')}${g}${label(140, 312, 'City grid')}`; },
-    twins: () => `<ellipse cx="236" cy="240" rx="62" ry="40" class="d-green"/>${label(236, 296, 'KLCC Park')}
-      <rect x="96" y="152" width="148" height="40" class="d-bld2"/>${label(170, 214, 'Mall podium')}
-      ${star(128, 140, 30)}${star(212, 140, 30)}<rect x="152" y="134" width="36" height="10" fill="#64d2ff"/>${label(170, 94, 'Skybridge')}`,
+    lloyds: () => { let t = `<rect x="110" y="110" width="120" height="120" class="d-bld"/><rect x="140" y="140" width="60" height="60" fill="#0a84ff" opacity=".45"/>`;
+      for (const [x, y] of [[96, 96], [244, 96], [258, 170], [244, 244], [96, 244], [82, 170]]) t += `<circle cx="${x}" cy="${y}" r="13" class="d-bld2"/>`;
+      return t + label(170, 290, 'Six service towers around one atrium') + label(170, 68, 'Leadenhall Street') + label(300, 300, 'Lime Street'); },
+    canada: () => `<rect x="20" y="230" width="300" height="60" class="d-water"/>${label(170, 300, 'West India Docks')}<rect x="125" y="110" width="90" height="90" class="d-bld"/><path d="M125,110 L170,155 L215,110 M125,200 L170,155 L215,200" stroke="#000" stroke-opacity=".3" fill="none"/>${label(170, 96, 'Pyramid roof')}<rect x="110" y="205" width="120" height="20" class="d-road" style="fill:rgba(255,255,255,.14)"/>${label(170, 222, 'Canada Square')}`,
+    gherkin: () => `<circle cx="${C}" cy="${C}" r="95" class="d-road" style="fill:rgba(255,255,255,.1)"/>${label(C, 280, 'Public plaza')}<circle cx="${C}" cy="${C}" r="56" class="d-bld"/><circle cx="${C}" cy="${C}" r="18" class="d-bld2"/>${label(C, 90, 'St Mary Axe')}`,
+    shard: () => `<path d="M20,40 C120,70 230,50 320,70 L320,110 C230,92 120,110 20,82 Z" class="d-water"/>${label(170, 62, 'River Thames')}<polygon points="150,150 190,150 205,190 170,215 135,190" class="d-bld"/><rect x="60" y="230" width="220" height="40" class="d-road" style="fill:rgba(255,255,255,.14)"/>${label(170, 255, 'London Bridge station')}`,
+    leadenhall: () => `<polygon points="110,120 230,120 230,225 110,225" class="d-bld"/><rect x="110" y="104" width="120" height="16" class="d-bld2"/>${label(170, 96, 'Service core')}<rect x="60" y="235" width="220" height="22" class="d-road" style="fill:rgba(255,255,255,.14)"/>${label(170, 250, 'Leadenhall Street')}${label(170, 290, 'Public space under the tower')}`,
+    walkie: () => `<path d="M120,120 L220,120 L230,220 L110,220 Z" class="d-bld"/><rect x="60" y="90" width="220" height="20" class="d-road" style="fill:rgba(255,255,255,.14)"/>${label(170, 104, 'Fenchurch Street')}<rect x="236" y="120" width="16" height="110" class="d-road" style="fill:rgba(255,255,255,.14)"/>${label(286, 260, 'Philpot Lane')}`,
+    bloomberg: () => `<rect x="80" y="100" width="80" height="140" class="d-bld"/><rect x="180" y="100" width="80" height="140" class="d-bld"/><rect x="160" y="100" width="20" height="140" class="d-road" style="fill:rgba(100,210,255,.35)"/>${label(170, 92, 'Bloomberg Arcade')}<rect x="60" y="250" width="220" height="20" class="d-road" style="fill:rgba(255,255,255,.14)"/>${label(170, 264, 'Queen Victoria Street')}`,
+    coaldrops: () => `<path d="M20,262 C120,250 220,270 320,256 L320,300 L20,300 Z" class="d-water"/>${label(170, 292, 'Regent’s Canal')}<polygon points="90,230 120,230 165,90 145,90" class="d-bld"/><polygon points="220,230 250,230 195,90 175,90" class="d-bld"/><rect x="145" y="80" width="50" height="18" fill="#0a84ff" opacity=".6"/>${label(170, 72, 'Kissing roofs')}${label(170, 200, 'Yard')}`,
+    bishopsgate: () => `<rect x="125" y="110" width="90" height="110" class="d-bld"/><rect x="230" y="60" width="22" height="220" class="d-road" style="fill:rgba(255,255,255,.14)"/>${label(241, 296, 'Bishopsgate')}${label(170, 96, 'City tower cluster')}`,
+    battersea: () => `<path d="M20,40 C120,64 230,44 320,64 L320,100 C230,84 120,104 20,78 Z" class="d-water"/>${label(170, 58, 'River Thames')}<rect x="90" y="120" width="160" height="100" class="d-bld"/>${[[90, 120], [250, 120], [90, 220], [250, 220]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="9" fill="#f2ead8"/>`).join('')}<rect x="90" y="120" width="40" height="100" class="d-bld2"/><rect x="210" y="120" width="40" height="100" class="d-bld2"/>${label(110, 238, 'Hall A')}${label(230, 238, 'Hall B')}<rect x="150" y="262" width="40" height="22" class="d-road" style="fill:rgba(255,255,255,.2)"/>${label(170, 300, 'Northern line station')}`,
   };
   function siteDiagram(s) {
     let t = `<circle cx="${C}" cy="${C}" r="${R}" class="d-ring"/>`;
@@ -679,9 +773,9 @@ html { scroll-behavior: smooth; }
     return `<svg viewBox="-20 -20 380 380" role="img" aria-label="Site diagram with north, prevailing wind and sun path">${t}${plan}${w}</svg>`;
   }
   function eraBar(s, year) {
-    const x = (y) => 20 + (y - 1900) / 110 * 560;
+    const x = (y) => 20 + (y - 1900) / 130 * 560;
     let t = '';
-    for (let y = 1900; y <= 2010; y += 20) t += `<line x1="${x(y)}" y1="40" x2="${x(y)}" y2="46" stroke="rgba(255,255,255,.3)"/><text class="era-t" x="${x(y)}" y="62" text-anchor="middle">${y}</text>`;
+    for (let y = 1900; y <= 2030; y += 20) t += `<line x1="${x(y)}" y1="40" x2="${x(y)}" y2="46" stroke="rgba(255,255,255,.3)"/><text class="era-t" x="${x(y)}" y="62" text-anchor="middle">${y}</text>`;
     return `<svg viewBox="0 0 600 70" role="img" aria-label="${s.style}, about ${s.span[0]} to ${s.span[1]}">
       <rect x="20" y="40" width="560" height="2" fill="rgba(255,255,255,.18)"/>
       <rect x="${x(s.span[0])}" y="20" width="${x(s.span[1]) - x(s.span[0])}" height="16" rx="8" fill="rgba(10,132,255,.55)"/>
@@ -690,9 +784,9 @@ html { scroll-behavior: smooth; }
       ${t}</svg>`;
   }
   function gantt(curKey) {
-    const x = (y) => 170 + (y - 1915) / 95 * 410;
+    const x = (y) => 170 + (y - 1975) / 50 * 410;
     let t = '';
-    for (let y = 1920; y <= 2010; y += 10) t += `<line x1="${x(y)}" y1="14" x2="${x(y)}" y2="${14 + MARVELS.length * 30}" stroke="rgba(255,255,255,.08)"/><text class="g-axis" x="${x(y)}" y="${30 + MARVELS.length * 30}" text-anchor="middle">${y}</text>`;
+    for (let y = 1975; y <= 2025; y += 5) t += `<line x1="${x(y)}" y1="14" x2="${x(y)}" y2="${14 + MARVELS.length * 30}" stroke="rgba(255,255,255,.08)"/><text class="g-axis" x="${x(y)}" y="${30 + MARVELS.length * 30}" text-anchor="middle">${y}</text>`;
     MARVELS.forEach((m, i) => {
       const s = STORY[m.key], y = 22 + i * 30, cur = m.key === curKey;
       t += `<g class="g-row${cur ? ' cur' : ''}"><text class="g-name" x="160" y="${y + 5}" text-anchor="end">${m.name}</text>
@@ -711,132 +805,142 @@ html { scroll-behavior: smooth; }
   const entry = (x, y, rot = 0) => `<g transform="translate(${x},${y}) rotate(${rot})"><polygon points="0,-11 9,5 -9,5" class="c-in"/></g>`;
   const stepDots = (steps) => steps.map(([x, y], n) => `<circle cx="${x}" cy="${y}" r="11" class="c-dot"/><text class="c-dn" x="${x}" y="${y + 4}" text-anchor="middle">${n + 1}</text>`).join('');
   const CIRC = {
-    bauhaus: {
-      title: 'A pinwheel tied together by a bridge',
-      draw: () => `<rect x="300" y="0" width="34" height="400" class="c-road"/>${tx(317, 392, 'Road')}
-        ${rm(60, 50, 210, 150, 'Workshop wing')}${rm(370, 40, 170, 110, 'Vocational school')}
-        <rect x="250" y="88" width="140" height="40" rx="6" class="c-room c-upper"/>${tx(320, 82, 'Bridge, upper floors: offices')}
-        ${rm(212, 212, 64, 110, 'Hall', 'c-room', 250)}${tx(244, 270, 'stage')}${tx(244, 288, 'canteen')}
-        ${rm(170, 330, 150, 56, 'Studio block, 28 studios')}
-        ${stair(222, 168)}${stair(286, 340)}${stair(470, 112)}
-        ${route([[317, 236], [282, 200], [253, 181]])}${route([[253, 181], [270, 108], [400, 108], [480, 124]], 'c-route c-up')}
-        ${route([[253, 194], [244, 236], [244, 300], [270, 336]], 'c-route2')}${entry(296, 210, -60)}`,
-      steps: [[318, 236, 'Arrive from the road and enter under the canopy'], [253, 181, 'Main stair hall at the hinge of the wings'], [330, 108, 'Climb to the bridge: offices span the street'], [480, 124, 'Arrive in the vocational school'], [196, 290, 'Or go straight on through hall, stage and canteen to the studios']],
-      lesson: 'Circulation is the organising idea. The bridge crosses the road and holds the offices, so the route between schools is also the place the school is run from.',
-      prompt: 'Redraw the plan as three bubbles and one bridge. Where would the entrance go if the road were not there?',
+    lloyds: {
+      title: 'One room in the middle, everything else on the outside',
+      draw: () => `<rect x="0" y="370" width="600" height="30" class="c-road"/>${tx(470, 390, 'Lime Street')}
+        <rect x="150" y="70" width="300" height="270" rx="6" class="c-room"/>
+        <rect x="215" y="130" width="170" height="150" rx="6" class="c-core"/>${tx(300, 150, 'Atrium, 60 m high')}${tx(300, 270, 'Underwriting Room')}
+        <line x1="235" y1="250" x2="365" y2="170" stroke="#64d2ff" stroke-width="3"/><line x1="235" y1="170" x2="365" y2="250" stroke="#64d2ff" stroke-width="3"/>${tx(300, 214, 'escalators', 'middle')}
+        ${[[110, 40], [452, 40], [470, 185], [452, 330], [110, 330], [95, 185]].map(([x, y], n) => `<rect x="${x}" y="${y}" width="44" height="44" rx="10" class="c-podium" style="stroke:#fff;stroke-opacity:.5"/>${n % 2 ? stair(x + 9, y + 9) : lift(x + 11, y + 11)}`).join('')}
+        ${tx(132, 30, 'Service tower', 'middle')}${tx(560, 210, 'Lifts', 'middle')}${tx(560, 224, 'and stairs', 'middle')}
+        ${route([[300, 392], [300, 330], [300, 250]])}${route([[300, 250], [255, 175]], 'c-route c-up')}${route([[300, 250], [380, 300], [470, 350]], 'c-route2')}${route([[474, 352], [474, 62]], 'c-route c-up')}${entry(300, 384, 0)}`,
+      steps: [[300, 372, 'Enter from Lime Street'], [300, 300, 'Arrive in the Underwriting Room, under the 60 m atrium'], [252, 170, 'Escalators criss-cross up to the first three galleries'], [430, 330, 'Glass lifts in the outside towers reach the upper floors'], [474, 100, 'The Adam Room, rebuilt on the 11th floor']],
+      lesson: 'Rogers separated what changes from what lasts. Floors and the central Room stay open; lifts, stairs and pipes live outside, where they can be replaced without stopping the market.',
+      prompt: 'Draw the plan twice: once with the services inside, once outside. How much open floor does each version give you?',
     },
-    fallingwater: {
-      title: 'Compression, then release',
-      draw: () => `<path d="M0,318 C120,300 220,340 340,318 S520,300 600,320 L600,372 C500,356 400,380 300,366 S100,352 0,372 Z" class="c-water"/>${tx(560, 394, 'Bear Run', 'end')}
-        <path d="M600,26 L380,26" class="c-road" stroke-width="22" stroke="rgba(255,255,255,.12)" fill="none"/>${tx(590, 54, 'Drive, after crossing Bear Run', 'end')}
-        ${rm(150, 104, 250, 164, 'Living room')}
-        ${rm(270, 44, 40, 60, '', 'c-core')}${tx(290, 38, 'Stone chimney core')}
-        ${rm(330, 50, 50, 54, 'Entry', 'c-room', 46)}
-        ${rm(400, 128, 130, 70, 'East terrace', 'c-room c-terr', 190)}${rm(56, 148, 94, 64, 'West terrace', 'c-room c-terr')}
-        ${rm(230, 268, 54, 46, '', 'c-room c-terr')}${tx(257, 300, 'Hatch')}
-        ${stair(276, 70)}${stair(244, 280)}
-        ${route([[560, 26], [356, 26], [356, 76], [356, 118]])}${route([[356, 118], [300, 170], [465, 163]])}
-        ${route([[300, 190], [257, 270], [257, 330]], 'c-route2')}${route([[290, 104], [290, 60]], 'c-route c-up')}${entry(356, 60, 180)}`,
-      steps: [[470, 26, 'Arrive by the drive behind the house'], [356, 76, 'A low, dark, narrow entry'], [300, 150, 'Release into the wide, bright living room'], [465, 163, 'Out onto the terrace over the falls'], [257, 330, 'Or take the hatch stair down to the water'], [290, 60, 'Stairs lead up to the bedrooms, each with its own terrace']],
-      lesson: 'Wright keeps the entry low and dim so the living room feels vast when you arrive. The route is choreographed: squeeze, open, then out over the water.',
-      prompt: 'Sketch a long section from the drive to the hatch stair. Mark every change in ceiling height and every view you gain.',
+    canada: {
+      title: 'Through the mall, across the lobby, up the core',
+      draw: () => `<rect x="170" y="40" width="260" height="270" rx="6" class="c-room"/>
+        <rect x="250" y="120" width="100" height="100" rx="6" class="c-core"/>${[0, 1, 2].map((i) => [0, 1].map((j) => lift(258 + i * 30, 132 + j * 44)).join('')).join('')}${tx(300, 110, 'Central core: lifts')}
+        <rect x="185" y="250" width="230" height="45" rx="6" class="c-terr c-room"/>${tx(320, 270, 'Marble lobby, 11 m high')}
+        <rect x="150" y="330" width="300" height="34" rx="6" class="c-road"/>${tx(335, 352, 'Canada Square', 'start')}
+        <rect x="20" y="372" width="560" height="24" rx="4" class="c-under"/>${tx(80, 390, 'Mall and stations below', 'start')}
+        ${route([[60, 384], [300, 384], [300, 330], [300, 280], [300, 220]])}${route([[300, 220], [300, 60]], 'c-route c-up')}${entry(300, 322, 0)}`,
+      steps: [[60, 384, 'Arrive by the Jubilee line, Elizabeth line or DLR, through the mall'], [300, 345, 'Come up to Canada Square'], [200, 272, 'Cross the 11 m marble lobby'], [300, 170, 'Lifts in the central core'], [300, 60, 'Up to 50 floors of offices']],
+      lesson: 'A classic central-core tower: everything vertical sits in the middle, offices wrap around the outside for daylight. Simple, efficient, and copied around the world.',
+      prompt: 'Measure the core against the floor plate. What share of the floor is lifts and stairs, and how would that change at 70 floors?',
     },
-    brasilia: {
-      title: 'Down into darkness, up into light',
+    gherkin: {
+      title: 'A round plan with a twist',
       draw: () => {
-        let cols = '';
-        for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8; cols += `<circle cx="${(230 + 92 * Math.sin(a)).toFixed(1)}" cy="${(170 - 92 * Math.cos(a)).toFixed(1)}" r="7" class="c-v"/>`; }
-        return `<circle cx="230" cy="170" r="150" class="c-water"/>${tx(230, 36, 'Reflecting pool')}
-          <circle cx="230" cy="170" r="92" class="c-room"/>${tx(230, 140, 'Nave, below ground')}${cols}
-          <circle cx="230" cy="176" r="12" class="c-core"/>${tx(230, 204, 'Altar')}
-          <rect x="216" y="262" width="28" height="138" rx="4" class="c-dark"/>${tx(262, 360, 'Dim tunnel, under the pool', 'start')}
-          <ellipse cx="420" cy="250" rx="30" ry="22" class="c-room"/>${tx(420, 286, 'Baptistery')}
-          <rect x="70" y="60" width="16" height="16" class="c-v"/>${tx(78, 92, 'Bell tower')}
-          ${route([[230, 396], [230, 270], [230, 190]])}${route([[300, 200], [392, 240]], 'c-route2')}${entry(230, 390, 0)}
-          <g transform="translate(400,40)"><rect width="190" height="120" rx="12" class="c-inset"/>${tx(95, 18, 'Section')}
-            <line x1="10" y1="56" x2="180" y2="56" stroke="rgba(255,255,255,.45)"/>${tx(176, 50, 'ground', 'end')}
-            <path d="M14,56 L60,82 L150,82" stroke="#0a84ff" stroke-width="3" fill="none"/>
-            <path d="M70,82 C80,52 92,30 100,22 M130,82 C120,52 108,30 100,22" stroke="#fff" stroke-width="3" fill="none"/>
-            <path d="M100,22 l-8,-10 M100,22 l8,-10" stroke="#fff" stroke-width="3"/>
-            <path d="M40,74 l20,8" stroke="#000" stroke-width="8" stroke-opacity=".5"/>${tx(95, 106, 'dim tunnel → bright nave')}</g>`;
-      },
-      steps: [[230, 380, 'Cross the open plaza in full sun'], [230, 320, 'Walk down a dim tunnel beneath the pool'], [230, 220, 'Rise into the nave, lit from all sides'], [346, 220, 'The baptistery is reached from the nave, or by a spiral stair from the plaza']],
-      lesson: 'Light is the destination. The route goes down into darkness on purpose, so arriving in the bright nave feels like a release.',
-      prompt: 'Draw the ramp and nave in section. How long should the dark stretch be before the light means something?',
-    },
-    sydney: {
-      title: 'People on top, everything else inside the podium',
-      draw: () => `<rect x="0" y="0" width="600" height="400" class="c-water"/>${tx(300, 22, 'Harbour, north')}
-        <path d="M120,60 L480,60 L520,330 L80,330 Z" class="c-podium"/>
-        ${rm(130, 120, 150, 170, 'Concert Hall')}${rm(320, 136, 140, 154, 'Joan Sutherland Theatre', 'c-room', 200)}
-        ${rm(130, 70, 150, 46, 'North foyer', 'c-room c-terr', 86)}${rm(320, 86, 140, 46, 'North foyer', 'c-room c-terr', 102)}
-        <rect x="150" y="296" width="300" height="34" class="c-steps"/>${tx(300, 318, 'Monumental Steps')}
-        <rect x="190" y="340" width="220" height="44" rx="6" class="c-road"/>${tx(196, 398, 'Forecourt, from the city', 'start')}
-        <rect x="190" y="300" width="220" height="26" rx="4" class="c-under"/>
-        ${route([[300, 376], [300, 300], [205, 260], [205, 94]])}${route([[300, 300], [390, 260], [390, 108]])}
-        ${route([[560, 380], [440, 314], [190, 314]], 'c-route2')}${tx(590, 398, 'Covered drive beneath the steps', 'end')}${entry(300, 384, 0)}`,
-      steps: [[300, 370, 'Cross the forecourt from the city'], [300, 306, 'Climb the Monumental Steps'], [205, 230, 'Enter either hall from the podium'], [205, 104, 'At interval, the foyers open to the harbour'], [470, 330, 'Vehicles use the covered drive beneath the steps; services stay inside the podium']],
-      lesson: 'Utzon split movement by level. The public ceremony happens on top of the podium; vehicles, stage machinery and services live inside it, out of sight.',
-      prompt: 'Draw the podium in section and trace three people: a ticket holder, a performer and a delivery driver. Where do their routes cross?',
-    },
-    lotus: {
-      title: 'Nine doors, no back',
-      draw: () => {
-        let s = '', pools = '';
-        for (let i = 0; i < 9; i++) {
-          const a = i * 40 * Math.PI / 180, x1 = 300 + 168 * Math.sin(a), y1 = 200 - 168 * Math.cos(a), x2 = 300 + 92 * Math.sin(a), y2 = 200 - 92 * Math.cos(a);
-          s += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="c-route2"/>`;
-          const b = (i * 40 + 20) * Math.PI / 180;
-          pools += `<circle cx="${(300 + 135 * Math.sin(b)).toFixed(1)}" cy="${(200 - 135 * Math.cos(b)).toFixed(1)}" r="26" class="c-water"/>`;
+        let wells = '';
+        for (let i = 0; i < 6; i++) {
+          const a = i * Math.PI / 3 + .3, b = a + .32;
+          const p = (r, t) => `${(200 + r * Math.sin(t)).toFixed(1)},${(200 - r * Math.cos(t)).toFixed(1)}`;
+          wells += `<polygon points="${p(150, a)} ${p(150, b)} ${p(70, (a + b) / 2)}" class="c-upper c-room"/>`;
         }
-        let nona = []; for (let i = 0; i < 9; i++) { const a = i * 40 * Math.PI / 180; nona.push(`${(300 + 86 * Math.sin(a)).toFixed(1)},${(200 - 86 * Math.cos(a)).toFixed(1)}`); }
-        return `<circle cx="300" cy="200" r="190" class="c-green"/>${pools}
-          <circle cx="300" cy="200" r="108" class="c-podium"/>${tx(392, 112, 'Walkway ring', 'start')}
-          <polygon points="${nona.join(' ')}" class="c-room"/>${tx(300, 196, 'Central hall')}${tx(300, 212, 'under the dome')}
-          ${s}${route([[300, 400], [300, 300], [300, 286]])}${route([[300, 286], [300, 230]])}${entry(300, 392, 0)}`;
+        return `<circle cx="200" cy="200" r="178" class="c-podium"/>${tx(200, 392, 'Plaza')}
+          <circle cx="200" cy="200" r="150" class="c-room"/>${wells}
+          <circle cx="200" cy="200" r="45" class="c-core"/>${lift(178, 178)}${lift(200, 200)}${tx(200, 260, 'Central core')}${tx(330, 70, 'Lightwells turn 5° per floor', 'start')}
+          <path d="M440,380 C430,250 450,120 520,40 C590,120 610,250 600,380 Z" class="c-room"/>${tx(520, 404, 'Section')}
+          <line x1="450" y1="122" x2="590" y2="122" stroke="#fff" stroke-opacity=".5"/>${tx(594, 126, '34', 'start')}
+          <line x1="480" y1="70" x2="560" y2="70" stroke="#fff" stroke-opacity=".5"/>${tx(594, 74, '39', 'start')}
+          <line x1="500" y1="52" x2="540" y2="52" stroke="#fff" stroke-opacity=".5"/>${tx(594, 56, '40', 'start')}
+          ${route([[200, 392], [200, 300], [200, 230]])}${route([[520, 380], [520, 122]], 'c-route c-up')}${route([[520, 122], [520, 70]], 'c-route2')}${route([[520, 70], [520, 52]], 'c-route c-up')}${entry(200, 384, 0)}`;
       },
-      steps: [[300, 380, 'Walk in along the garden path'], [300, 324, 'Climb to the raised walkway between the pools'], [300, 286, 'Enter through any of nine petal doors'], [300, 246, 'Arrive in the single central hall']],
-      lesson: 'Radial symmetry makes every side an entrance. There is no back door and no ranking of arrival, which fits a temple open to every faith.',
-      prompt: 'Plan the walk from the gate. How do the pools steer you to a door without a single wall?',
+      steps: [[200, 330, 'Cross the plaza into the lobby'], [200, 200, 'Lifts in the central core'], [520, 250, 'The main lifts rise to the 34th floor'], [545, 96, 'A second lift, pushed from below, reaches the 39th floor'], [520, 40, 'Stairs up to the bar under the glass dome']],
+      lesson: 'Rotating a simple plan creates complexity for free: every floor is the same, but the lightwells spiral, so daylight and air reach the middle of a deep round floor.',
+      prompt: 'Draw three floor plans, each turned 5°. Overlay them and trace how a lightwell climbs.',
     },
-    bilbao: {
-      title: 'Step down from the city, then orbit the atrium',
-      draw: () => `<path d="M0,0 L600,0 L600,56 C420,74 200,40 0,62 Z" class="c-water"/>${tx(80, 30, 'Nervión river')}
-        <rect x="0" y="62" width="600" height="18" class="c-road"/>${tx(450, 76, 'Riverside walk', 'end')}
-        <rect x="470" y="0" width="34" height="400" class="c-road"/>${tx(487, 392, 'La Salve bridge')}
-        ${rm(70, 150, 120, 110, 'Rectangular galleries', 'c-room', 176)}
-        <path d="M200,110 C230,90 300,96 320,120 C346,150 330,240 300,262 C270,282 220,270 204,240 C186,206 180,130 200,110 Z" class="c-room"/>${tx(262, 190, 'Atrium, 50 m high')}
-        <path d="M320,140 C380,120 470,124 560,140 L560,190 C470,200 380,196 326,190 Z" class="c-room c-terr"/>${tx(440, 164, '130 m gallery runs under the bridge')}
-        <path d="M120,100 C150,84 190,90 200,110 L190,150 L120,150 Z" class="c-room c-terr"/>
-        ${rm(530, 96, 40, 40, '', 'c-core')}${tx(550, 90, 'Tower')}
-        <rect x="200" y="300" width="120" height="50" rx="4" class="c-steps"/>${tx(326, 330, 'Steps down', 'start')}
-        <rect x="120" y="356" width="330" height="40" rx="6" class="c-road"/>${tx(284, 382, 'City street, higher level', 'start')}
-        ${lift(250, 214)}${stair(282, 228)}
-        ${route([[260, 390], [260, 300], [260, 262], [262, 220]])}${route([[262, 205], [200, 205], [130, 205]], 'c-route c-up')}${route([[300, 170], [440, 168], [540, 168]], 'c-route c-up')}
-        ${route([[20, 72], [580, 72]], 'c-route2')}${entry(260, 296, 0)}`,
-      steps: [[260, 380, 'Leave the city street'], [260, 318, 'Descend a broad flight of steps: the riverside sits about 16 m below the city'], [262, 236, 'Enter the tall atrium, the hub of the museum'], [150, 205, 'Glass lifts, stairs and curved catwalks reach each gallery'], [520, 168, 'The long gallery slides under La Salve bridge']],
-      lesson: 'Gehry used the drop from the city to the river. You descend to a modest door, then the atrium opens upward and every gallery is reached from it, so you never get lost.',
-      prompt: 'Trace the atrium’s catwalks and lifts. Which galleries can you visit in one loop without retracing your steps?',
+    shard: {
+      title: 'A vertical town over a station',
+      draw: () => `<polygon points="210,380 390,380 318,24 282,24" class="c-room"/>
+        ${[[330, 'Offices'], [232, 'Restaurants 31–33'], [190, 'Hotel 34–52'], [124, 'Homes 53–65'], [64, 'The View 68–72']].map(([y, t]) => `<line x1="${210 + (380 - y) * .25}" y1="${y}" x2="${390 - (380 - y) * .25}" y2="${y}" stroke="#fff" stroke-opacity=".35"/>${tx(420, y + 4, t, 'start')}`).join('')}
+        <rect x="120" y="382" width="360" height="16" rx="4" class="c-under"/>${tx(110, 394, 'London Bridge station', 'end')}
+        ${route([[300, 392], [300, 330]])}${route([[300, 330], [300, 64]], 'c-route c-up')}${entry(300, 386, 0)}`,
+      steps: [[300, 372, 'Arrive at London Bridge station, at the foot of the tower'], [300, 330, 'Office lobbies and lifts for the lower floors'], [300, 232, 'Restaurants, then the hotel from the 34th floor'], [300, 124, 'Homes higher up, on smaller floors'], [300, 64, 'The View from The Shard, 244 m up']],
+      lesson: 'The taper is functional: big floors at the bottom suit offices, smaller floors near the top suit homes and a viewing deck. The building’s shape follows its mix of uses.',
+      prompt: 'List the uses floor by floor and sketch the floor area each one needs. Does your stack produce a taper?',
     },
-    petronas: {
-      title: 'Vertical zoning: express up, local across',
-      draw: () => {
-        const st = []; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8, r = i % 2 ? 128 : 160; st.push(`${(180 + r * Math.sin(a)).toFixed(1)},${(200 - r * Math.cos(a)).toFixed(1)}`); }
-        let cols = ''; for (let i = 0; i < 16; i++) { const a = i * Math.PI / 8 + Math.PI / 16; cols += `<circle cx="${(180 + 118 * Math.sin(a)).toFixed(1)}" cy="${(200 - 118 * Math.cos(a)).toFixed(1)}" r="6" class="c-v"/>`; }
-        let lifts = ''; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) lifts += lift(146 + i * 24, 166 + j * 24);
-        const tw = (x) => `<path d="M${x},380 L${x},150 L${x + 6},120 L${x + 12},90 L${x + 18},70 L${x + 22},40 L${x + 25},14 L${x + 28},40 L${x + 32},70 L${x + 38},90 L${x + 44},120 L${x + 50},150 L${x + 50},380 Z" class="c-room"/>`;
-        return `<polygon points="${st.join(' ')}" class="c-room"/>${tx(180, 64, 'Typical office floor')}
-          <rect x="132" y="152" width="96" height="96" rx="6" class="c-core"/>${lifts}${cols}
-          ${tx(180, 268, 'Core: lifts, stairs, services')}${tx(180, 332, 'Open office ring, 16 perimeter columns')}
-          ${tw(400)}${tw(520)}
-          <rect x="450" y="232" width="70" height="10" fill="#64d2ff"/>${tx(485, 226, 'Skybridge 41–42')}
-          <rect x="370" y="372" width="230" height="20" rx="4" class="c-podium"/>${tx(485, 398, 'Podium and mall')}
-          ${route([[425, 380], [425, 240]], 'c-route c-up')}${route([[425, 240], [425, 130]], 'c-route2')}${route([[440, 237], [530, 237], [545, 237]], 'c-route')}
-          ${tx(392, 310, 'Express', 'end')}${tx(392, 324, 'double-deck', 'end')}${tx(392, 180, 'Local', 'end')}${entry(425, 386, 0)}`;
-      },
-      steps: [[425, 366, 'Enter the tower lobby from the podium'], [446, 300, 'Ride a double-deck lift'], [425, 240, 'Change lifts at floors 41–42, the skybridge level'], [425, 160, 'Local lifts serve the upper floors'], [520, 237, 'Or cross the skybridge to the other tower']],
-      lesson: 'In a supertall tower, circulation is zoning. Express lifts to a sky lobby, then local lifts above, keep the core small enough to leave a usable office ring on every floor.',
-      prompt: 'Estimate what share of a typical floor the core takes. What would happen to it if every lift stopped at every floor?',
+    leadenhall: {
+      title: 'Open floors, lifts on the outside',
+      draw: () => `<rect x="130" y="40" width="340" height="60" rx="6" class="c-core"/>${[0, 1, 2, 3, 4, 5].map((i) => lift(160 + i * 50, 58)).join('')}${tx(300, 32, 'Glazed service core: lifts and plant')}
+        <rect x="130" y="100" width="340" height="170" rx="6" class="c-room"/>${tx(300, 190, 'Column-free office floor')}
+        <path d="M130,100 L215,270 L300,100 L385,270 L470,100" stroke="#64d2ff" stroke-opacity=".5" stroke-width="3" fill="none"/>${tx(486, 190, 'Megaframe', 'start')}
+        <rect x="90" y="290" width="420" height="80" rx="6" class="c-podium"/>${tx(300, 357, 'Public space, 30 m high')}
+        <rect x="430" y="300" width="60" height="40" class="c-steps"/>${tx(460, 356, 'Escalators')}
+        <rect x="40" y="378" width="520" height="20" rx="4" class="c-road"/>${tx(300, 393, 'Leadenhall Street')}
+        ${route([[300, 392], [300, 330], [460, 320]])}${route([[460, 320], [460, 270]], 'c-route c-up')}${route([[460, 270], [400, 100], [400, 70]], 'c-route2')}${route([[300, 70], [300, 100]], 'c-route c-up')}${entry(300, 384, 0)}`,
+      steps: [[300, 372, 'Walk in from Leadenhall Street'], [300, 330, 'Through the 30 m public space under the tower'], [460, 300, 'Escalators up to the raised lobby'], [400, 70, 'Lifts in the glazed core on the flat side'], [200, 230, 'Open floors, with no core in the middle']],
+      lesson: 'Moving the core to one side and the structure to the perimeter leaves the whole floor open. The cost is a tower whose lifts and bracing are always on show, so they were designed to be seen.',
+      prompt: 'Sketch a floor with a central core, then with a side core. Mark the best desks in each.',
+    },
+    walkie: {
+      title: 'Two front doors: offices and the Sky Garden',
+      draw: () => `<path d="M230,380 L370,380 L410,90 C410,70 400,60 380,58 L220,58 C200,60 190,70 190,90 Z" class="c-room"/>
+        <rect x="200" y="58" width="200" height="44" rx="6" class="c-upper c-room"/>${tx(300, 84, 'Sky Garden, 35–37')}
+        <line x1="215" y1="230" x2="385" y2="230" stroke="#fff" stroke-opacity=".35"/>${tx(420, 234, 'Floor 20', 'start')}
+        ${tx(150, 320, 'Low-rise lifts', 'end')}${tx(150, 170, 'High-rise lifts', 'end')}
+        <rect x="455" y="58" width="22" height="322" rx="4" class="c-under"/>${tx(500, 220, 'Express lifts', 'start')}
+        <rect x="40" y="380" width="520" height="18" rx="4" class="c-road"/>${tx(160, 394, 'Fenchurch Street (offices)')}${tx(470, 394, 'Philpot Lane (Sky Garden)')}
+        ${route([[260, 392], [260, 230]], 'c-route c-up')}${route([[285, 392], [285, 110]], 'c-route c-up')}${route([[466, 392], [466, 80], [400, 80]])}${entry(272, 386, 0)}${entry(466, 386, 0)}`,
+      steps: [[240, 372, 'Office staff enter from Fenchurch Street'], [240, 300, 'Seven double-deck lifts serve up to the 20th floor'], [305, 160, 'Seven more serve the floors above'], [490, 372, 'Visitors enter separately on Philpot Lane'], [440, 110, 'Two express lifts rise to the Sky Garden']],
+      lesson: 'Separating public and private routes made a public garden possible in a private office tower: visitors never cross the office lobby.',
+      prompt: 'Draw the ground floor with two entrances. What security, queueing and lift space does the public route need?',
+    },
+    bloomberg: {
+      title: 'Up by lift, down by ramp',
+      draw: () => `<rect x="40" y="50" width="230" height="300" rx="6" class="c-room"/><rect x="330" y="50" width="230" height="300" rx="6" class="c-room"/>
+        <rect x="270" y="50" width="60" height="300" class="c-road"/>${tx(300, 40, 'Bloomberg Arcade')}
+        <rect x="270" y="120" width="60" height="14" fill="#64d2ff" opacity=".6"/><rect x="270" y="240" width="60" height="14" fill="#64d2ff" opacity=".6"/>${tx(300, 160, 'Bridges')}
+        <ellipse cx="155" cy="190" rx="80" ry="55" fill="none" stroke="#c98a4a" stroke-width="10"/>${tx(155, 266, 'Bronze ramp, 210 m')}
+        <circle cx="155" cy="320" r="22" class="c-core"/>${tx(155, 292, 'Vortex entrance', 'middle')}
+        ${lift(230, 300)}${tx(230, 290, 'Glass lifts', 'middle')}
+        <rect x="380" y="270" width="140" height="60" rx="6" class="c-dark"/>${tx(450, 304, 'Mithraeum (below)')}
+        <rect x="20" y="370" width="560" height="26" rx="4" class="c-road"/>${tx(300, 388, 'Queen Victoria Street')}
+        ${route([[155, 392], [155, 320], [241, 312]])}${route([[241, 312], [241, 150]], 'c-route c-up')}${route([[235, 190], [155, 135], [75, 190], [155, 245]], 'c-route2')}${route([[270, 127], [330, 127]])}${entry(155, 384, 0)}`,
+      steps: [[155, 372, 'Enter through the timber Vortex'], [241, 240, 'Glass lifts rise to the sixth-floor pantry'], [80, 190, 'Walk down the bronze ramp, meeting colleagues on the way'], [300, 127, 'Bridges cross the public arcade between the two buildings'], [450, 270, 'The Roman Mithraeum, open to the public']],
+      lesson: 'Foster made the slow route the social one. Lifts take you up to a shared floor, and the ramp brings you down past every team, designed for chance meetings.',
+      prompt: 'Map who meets whom on your way through an office you know. Where would a ramp or a shared stair change that?',
+    },
+    coaldrops: {
+      title: 'Two sheds, one yard, one new roof',
+      draw: () => `<polygon points="60,380 160,380 290,70 250,70" class="c-room"/><polygon points="540,380 440,380 310,70 350,70" class="c-room"/>
+        ${tx(140, 260, 'East drops, 1851', 'middle')}${tx(460, 260, 'West drops, 1860', 'middle')}
+        <path d="M245,60 C270,30 330,30 355,60 L330,100 L270,100 Z" class="c-upper c-room"/>${tx(300, 24, 'Kissing roofs: new upper floor')}
+        <polygon points="160,380 440,380 330,100 270,100" class="c-podium"/>${tx(300, 300, 'Yard')}
+        <rect x="20" y="382" width="560" height="16" rx="4" class="c-road"/>${tx(300, 395, 'From Granary Square and the canal')}
+        ${route([[300, 392], [300, 140]])}${route([[300, 140], [300, 70]], 'c-route c-up')}${route([[300, 230], [200, 230]], 'c-route2')}${route([[300, 200], [400, 200]], 'c-route2')}${entry(300, 386, 0)}`,
+      steps: [[300, 360, 'Walk up from Granary Square and the canal'], [300, 270, 'Into the open yard between the sheds'], [200, 230, 'Shops in the Victorian arches on two levels'], [300, 70, 'Up to the new floor under the kissing roofs']],
+      lesson: 'Heatherwick kept the yard open and put the new floor where the sheds meet, so the walk from the canal ends at the most surprising space.',
+      prompt: 'Sketch the yard in section. Where does the roof shelter people, and where does it open to the sky?',
+    },
+    bishopsgate: {
+      title: 'A vertical village with lift-assisted escape',
+      draw: () => `<rect x="220" y="30" width="160" height="350" rx="6" class="c-room"/>
+        <rect x="220" y="30" width="160" height="34" rx="6" class="c-upper c-room"/>${tx(300, 52, 'Horizon 22, floor 58')}
+        <rect x="220" y="300" width="160" height="80" rx="6" class="c-podium"/>${tx(300, 336, 'Market, gym, bikes')}
+        ${[0, 1, 2].map((i) => `<rect x="${236 + i * 48}" y="${280 - i * 70}" width="28" height="${i * 70 + 20}" fill="none" stroke="#64d2ff" stroke-dasharray="4 4"/>`).join('')}${tx(400, 230, 'Double-deck lift groups', 'start')}
+        <rect x="40" y="382" width="520" height="16" rx="4" class="c-road"/>${tx(300, 395, 'Bishopsgate')}
+        <rect x="420" y="30" width="20" height="350" rx="4" class="c-under"/>${tx(450, 60, 'Gallery lifts', 'start')}
+        ${route([[300, 392], [300, 340]])}${route([[250, 300], [250, 220]], 'c-route c-up')}${route([[298, 300], [298, 150]], 'c-route c-up')}${route([[346, 300], [346, 80]], 'c-route c-up')}${route([[430, 392], [430, 47], [380, 47]])}${entry(300, 386, 0)}`,
+      steps: [[300, 372, 'Enter from Bishopsgate'], [236, 357, 'Shared floors: food market, gym, bike park'], [298, 230, 'Three groups of double-deck lifts, also used for evacuation'], [455, 372, 'A separate route for Horizon 22 visitors'], [430, 47, 'The free gallery, 254 m up']],
+      lesson: 'At 12,000 people, circulation is the building. Grouped double-deck lifts carry the crowd every day, and the same lifts are part of the escape plan.',
+      prompt: 'If 12,000 people arrive between 8 and 9 a.m., how many lift trips is that? Sketch how you would split the lift groups.',
+    },
+    battersea: {
+      title: 'Turbine halls as streets, a chimney as a lift',
+      draw: () => `<path d="M0,0 L600,0 L600,40 C400,56 200,30 0,48 Z" class="c-water"/>${tx(300, 24, 'River Thames')}
+        <rect x="80" y="80" width="440" height="230" rx="6" class="c-room"/>
+        <rect x="80" y="80" width="130" height="230" class="c-podium"/>${tx(145, 200, 'Turbine Hall A')}
+        <rect x="390" y="80" width="130" height="230" class="c-podium"/>${tx(455, 200, 'Turbine Hall B')}
+        ${tx(300, 190, 'Boiler house:')}${tx(300, 204, 'Apple offices above')}
+        ${[[80, 80], [520, 80], [80, 310], [520, 310]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="16" fill="#f2ead8"/>`).join('')}${tx(80, 60, 'Lift 109', 'middle')}
+        <rect x="250" y="350" width="100" height="40" rx="6" class="c-core"/>${tx(300, 374, 'Tube station')}
+        ${route([[300, 350], [300, 312]])}${route([[300, 312], [145, 240], [145, 110]])}${route([[145, 110], [82, 82]], 'c-route c-up')}${route([[300, 312], [455, 240]], 'c-route2')}${entry(300, 330, 0)}`,
+      steps: [[300, 345, 'Arrive on the Northern line extension'], [300, 290, 'Enter the restored power station'], [145, 240, 'Turbine Hall A: shops and the Lift 109 exhibition'], [100, 120, 'Glass lift up the north-west chimney to 109 m'], [455, 240, 'Turbine Hall B: more shops and restaurants']],
+      lesson: 'The restoration kept the building’s bones and turned its biggest spaces into public streets. The chimney, once pure machinery, became the best viewpoint.',
+      prompt: 'Find a disused industrial building near you. Which of its spaces could become a street, a square or a viewpoint?',
     },
   };
   function circulation(key) {
@@ -858,10 +962,13 @@ html { scroll-behavior: smooth; }
       </section>`;
   }
 
+  // every design decision reads as intent, move, result
+  const imr = (o) => typeof o === 'string' ? `<p>${o}</p>` : `<dl class="imr"><div><dt>Intent</dt><dd>${o.intent}</dd></div><div><dt>Move</dt><dd>${o.move}</dd></div><div><dt>Result</dt><dd>${o.result}</dd></div></dl>`;
   function renderStory(i) {
     const m = MARVELS[i], s = STORY[m.key];
     const yrs = s.built[1] - s.built[0];
-    const ih = (1000 * m.img.h / m.img.w) / 6.25;
+    const cw0 = m.img.cw || 1000, ix = m.img.x || 0, ih = (cw0 * m.img.h / m.img.w) / 6.25;
+    const fpos = `top:${m.img.y / 6.25}%;height:${ih}%;left:${ix / 10}%;width:${cw0 / 10}%`;
     const pinned = s.decisions.map((d, n) => [d, n]).filter(([d]) => d[2]);
     const next = MARVELS[i + 1];
     const lessonOne = CIRC[m.key].lesson.split('. ')[0] + '.';
@@ -880,12 +987,8 @@ html { scroll-behavior: smooth; }
         <div class="chips"><span class="chip style">${s.style}</span><span class="chip">${m.architect}</span><span class="chip">${s.climate.split(' (')[0]}</span></div>
       </section>
       <section>
-        <div class="tiles">
-          <div class="tile glass"><div class="k">Completed</div><div class="v">${m.year}</div></div>
-          <div class="tile glass"><div class="k">Construction</div><div class="v">${yrs <= 1 ? 'About 1 year' : yrs + ' years'}</div></div>
-          <div class="tile glass"><div class="k">Height</div><div class="v">${m.height}</div></div>
-          <div class="tile glass"><div class="k">Client</div><div class="v">${s.client}</div></div>
-        </div>
+        <div class="kicker">Key facts</div>
+        <dl class="kfacts">${s.facts.map(([k, v]) => `<div class="glass"><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
       </section>
       ${circulation(m.key)}
       <section id="s-site">
@@ -907,11 +1010,11 @@ html { scroll-behavior: smooth; }
         <div class="kicker">Design decisions</div>
         <h3>${s.decisions.length} choices that made it</h3>
         <div class="figure" id="fig">
-          <img src="photos/${m.key}-bg.jpg" alt="" style="top:${m.img.y / 6.25}%;height:${ih}%">
-          <img src="photos/${m.key}-hero.webp" alt="${m.name}, annotated" style="top:${m.img.y / 6.25}%;height:${ih}%">
+          ${cw0 < 1000 ? `<img src="photos/${m.key}-bg.jpg" alt="" style="top:0;left:0;width:100%;height:100%;object-fit:cover;filter:blur(18px) brightness(.8);transform:scale(1.15)">` : ''}<img src="photos/${m.key}-bg.jpg" alt="" style="${fpos}">
+          <img src="photos/${m.key}-hero.webp" alt="${m.name}, annotated" style="${fpos}">
           ${pinned.map(([d, n]) => `<span class="pin" data-n="${n}" style="left:${d[2][0] / 10}%;top:${d[2][1] / 6.25}%">${n + 1}</span>`).join('')}
         </div>
-        <ol class="decisions">${s.decisions.map((d, n) => `<li class="glass" id="d-${n}" data-n="${n}"><b class="${d[2] ? '' : 'off'}">${n + 1}</b><h4>${d[0]}</h4><p>${d[1]}</p>${d[3] ? `<button type="button" class="rel" data-go="s-${d[3]}">See ${LINKNAME[d[3]]} →</button>` : ''}</li>`).join('')}</ol>
+        <ol class="decisions">${s.decisions.map((d, n) => `<li class="glass" id="d-${n}" data-n="${n}"><b class="${d[2] ? '' : 'off'}">${n + 1}</b><h4>${d[0]}</h4>${imr(d[1])}${d[3] ? `<button type="button" class="rel" data-go="s-${d[3]}">See ${LINKNAME[d[3]]} →</button>` : ''}</li>`).join('')}</ol>
       </section>
       <section id="s-style">
         <div class="kicker">Architectural style</div>
@@ -937,7 +1040,7 @@ html { scroll-behavior: smooth; }
       </section>
       <section id="s-sources">
         <div class="kicker">Sources</div>
-        <p class="body" style="color:var(--label-2)">Facts checked in October 2026. Wind directions come from airport weather records (METAR, via the Iowa Environmental Mesonet) for 2019–2023, unless noted. Plans are simplified study diagrams; use published drawings for measured work.</p>
+        <p class="body" style="color:var(--label-2)">Facts checked in October 2026. Wind directions come from London City Airport weather records (METAR, via the Iowa Environmental Mesonet) for 2019–2023. Plans are simplified study diagrams; use published drawings for measured work.</p>
         <ul class="srcs">${SOURCES[m.key].map(([t, u]) => `<li><a href="${u}" target="_blank" rel="noopener">${t}</a></li>`).join('')}</ul>
       </section>
       ${next ? `<div class="nextup"><button class="capsule glass" type="button" id="nextStory">Next: ${next.name}, ${next.year} →</button></div>` : ''}`;
@@ -958,28 +1061,32 @@ html { scroll-behavior: smooth; }
   }
   const LINKNAME = { circulation: 'circulation', site: 'site and climate', materials: 'materials', style: 'style' };
   const SOURCES = {
-    bauhaus: [['Bauhaus Dessau, Wikipedia', 'https://en.wikipedia.org/wiki/Bauhaus_Dessau'], ['Bauhaus Building, Stiftung Bauhaus Dessau', 'https://bauhaus-dessau.de/en/venues/bauhaus-building/'], ['Administration bridge, RIBApix', 'https://www.architecture.com/image-library/ribapix/image-information/poster/bauhaus-building-dessau-the-administration-block-link-bridge/posterid/RIBA92958.html']],
-    fallingwater: [['Fallingwater, Wikipedia', 'https://en.wikipedia.org/wiki/Fallingwater'], ['Fallingwater visitor guide (compression and release)', 'https://fallingwater.org/wp-content/uploads/2025/05/Visitor-guide-2025-for-web_English-1.pdf']],
-    brasilia: [['Cathedral of Brasília, Wikipedia', 'https://en.wikipedia.org/wiki/Cathedral_of_Bras%C3%ADlia'], ['Cathedral of Brasília, Designing Buildings', 'https://designingbuildings.co.uk/wiki/Cathedral_of_Brasilia']],
-    sydney: [['Sydney Opera House, Wikipedia', 'https://en.wikipedia.org/wiki/Sydney_Opera_House'], ['Utzon’s platforms, Google Arts & Culture', 'https://artsandculture.google.com/exhibit/UwLCl921UgJqLA'], ['Venue layout, Structurae', 'https://structurae.net/en/structures/sydney-opera-house'], ['Climate of Sydney, Wikipedia', 'https://en.wikipedia.org/wiki/Climate_of_Sydney']],
-    lotus: [['Lotus Temple, Wikipedia', 'https://en.wikipedia.org/wiki/Lotus_Temple']],
-    bilbao: [['Guggenheim Museum Bilbao, Wikipedia', 'https://en.wikipedia.org/wiki/Guggenheim_Museum_Bilbao'], ['Inside the museum, Guggenheim Bilbao', 'https://guggenheim-bilbao.eus/en/the-building/inside-the-museum'], ['Gehry on titanium, NPR', 'https://www.npr.org/transcripts/nx-s1-5642574'], ['Site and entrance, Archiweb', 'https://www.archiweb.cz/en/b/guggenheimovo-muzeum-v-bilbau']],
-    petronas: [['Petronas Towers, Wikipedia', 'https://en.wikipedia.org/wiki/Petronas_Towers'], ['Skybridge engineering, Engineering.com', 'https://www.engineering.com/?p=1164'], ['Skybridge and lifts, Otis', 'https://www.otis.com/en/sg/our-company/global-projects/project-showcase/petronas-twin-towers'], ['Structure, Archnet', 'https://archnet.org/sites/4402'], ['KLCC Park, Wikipedia', 'https://en.wikipedia.org/wiki/KLCC_Park']],
+    lloyds: [['Lloyd’s building, Wikipedia', 'https://en.wikipedia.org/wiki/Lloyd%27s_building'], ['The Lloyd’s building, Lloyd’s', 'https://www.lloyds.com/about-lloyds/the-lloyds-building'], ['High-tech inside out, Dezeen', 'https://www.dezeen.com/2019/11/19/lloyds-building-richard-rogers-high-tech-london/']],
+    canada: [['One Canada Square, Wikipedia', 'https://en.wikipedia.org/wiki/One_Canada_Square']],
+    gherkin: [['30 St Mary Axe, Wikipedia', 'https://en.wikipedia.org/wiki/30_St_Mary_Axe'], ['30 St Mary Axe, Harvard Design Magazine', 'https://www.harvarddesignmagazine.org/?p=1682']],
+    shard: [['The Shard, Wikipedia', 'https://en.wikipedia.org/wiki/The_Shard'], ['London Bridge Tower, Arquitectura Viva', 'https://arquitecturaviva.com/works/torre-london-bridge-8']],
+    leadenhall: [['Leadenhall Building, Wikipedia', 'https://en.wikipedia.org/wiki/Leadenhall_Building']],
+    walkie: [['20 Fenchurch Street, Wikipedia', 'https://en.wikipedia.org/wiki/20_Fenchurch_Street'], ['Sky Garden opens, Dezeen', 'https://www.dezeen.com/2015/01/12/sky-garden-rafael-vinoly-walkie-talkie-skyscraper-london-20-fenchurch-street/']],
+    bloomberg: [['Bloomberg London, Wikipedia', 'https://en.wikipedia.org/wiki/Bloomberg_London'], ['Bloomberg HQ launch, Foster + Partners', 'https://www.fosterandpartners.com/news/bloomberg-s-new-european-headquarters-launched-in-the-city-of-london'], ['Construction start, Bloomberg Live', 'https://events.bloomberglive.com/bloomberg-design-make-2023/page/2630128/venue']],
+    coaldrops: [['Coal Drops Yard, Wikipedia', 'https://en.wikipedia.org/wiki/Coal_Drops_Yard']],
+    bishopsgate: [['22 Bishopsgate, Wikipedia', 'https://en.wikipedia.org/wiki/22_Bishopsgate'], ['Lift evacuation strategy, WSP', 'https://www.wsp.com/en-me/insights/22-bishopsgate-our-unique-passenger-lift-fire-evacuation-solution'], ['Lift design, Elevator World', 'https://elevatorworld.com/article/a-vision-evolves/']],
+    battersea: [['Battersea Power Station, Wikipedia', 'https://en.wikipedia.org/wiki/Battersea_Power_Station'], ['Phase 2, Steel Construction', 'https://steelconstruction.info/Battersea_Power_Station_Phase_2'], ['Lift 109, Battersea Power Station', 'https://batterseapowerstation.co.uk/news/bps-chimney-lift-experience-named-lift-109/']],
   };
-
   /* ---------- construction story: how each building went up, layer by layer ----------
      ground: card y where the building meets its site; the site below it is there from the start.
      steel: the structure is a steel frame (shown steel-blue) rather than concrete or stone (grey). */
   const BUILD = {
-    bauhaus: { ground: 590, plan: 'Gropius’s office draws workshops, school and studios as one complex', struct: 'Reinforced concrete frame', skin: 'Steel-framed glass curtain wall and white render', finish: 'Opens on 4 December 1926' },
-    fallingwater: { ground: 625, plan: 'Wright draws the house on top of the falls', struct: 'Sandstone core, then concrete cantilevers poured over the stream', skin: 'Windows framed in Cherokee red, ochre-painted concrete', finish: 'Family moves in 1937; guest wing done 1939' },
-    brasilia: { ground: 600, plan: 'Niemeyer’s hyperboloid of sixteen columns', struct: 'Sixteen precast concrete columns, about 90 tonnes each', skin: 'Glass fills the gaps between the ribs', finish: 'Dedicated on 31 May 1970' },
-    sydney: { ground: 398, plan: 'Utzon’s competition-winning shells', struct: 'Podium first, then precast concrete ribs for the shells', skin: 'Over a million Swedish ceramic tiles, then glass walls', finish: 'Opened by Queen Elizabeth II, 20 October 1973' },
-    lotus: { ground: 560, plan: 'Sahba’s 27-petal lotus, approved in 1977', struct: 'Cast-in-place reinforced concrete shells', skin: 'White Pentelic marble from Greece', finish: 'Dedicated on 24 December 1986' },
-    bilbao: { ground: 470, steel: true, plan: 'Gehry’s paper models turned into CATIA drawings', struct: 'Steel frame', skin: 'Titanium plates, Spanish limestone and glass', finish: 'Opens on 18 October 1997' },
-    petronas: { ground: 625, plan: 'Pelli’s towers on an eight-pointed star plan', struct: 'High-strength concrete core and 16 columns', skin: 'Stainless steel and glass curtain wall', finish: 'World’s tallest building, 1998' },
+    lloyds: { ground: 470, plan: 'Rogers’s team designs the building inside out', struct: 'Reinforced concrete frame and columns', skin: 'Steel-clad service towers, glass lifts and the glass atrium roof', finish: 'Opened by Queen Elizabeth II, 18 November 1986' },
+    canada: { ground: 590, steel: true, plan: 'Pelli’s tower for the new Canary Wharf', struct: 'About 27,500 t of steel on 222 piles in the old dock', skin: 'Stainless-steel cladding and a 40 m pyramid', finish: 'Opened 26 August 1991' },
+    gherkin: { ground: 600, steel: true, plan: 'Foster + Partners’ tapering tower, approved in 2000', struct: 'Steel diagrid around a central core', skin: 'Flat glass panels and the curved glass lens', finish: 'Opened 28 April 2004' },
+    shard: { ground: 500, plan: 'Piano’s spire, given consent in 2003', struct: 'Concrete core built top-down, post-tensioned floors', skin: '11,000 panes of extra-white glass', finish: 'Inaugurated 5 July 2012' },
+    leadenhall: { ground: 600, steel: true, plan: 'The wedge that keeps St Paul’s in view', struct: 'Perimeter steel megaframe', skin: 'Glass over the bracing; glazed service core', finish: 'Opened July 2014' },
+    walkie: { ground: 625, plan: 'Viñoly’s top-heavy tower, approved in 2007', struct: 'Concrete core, then steel frame', skin: 'Glass facade, shading added in 2014', finish: 'Completed August 2014' },
+    bloomberg: { ground: 625, plan: 'Foster + Partners design around an open newsroom', struct: 'The helical ramp threads through the floors', skin: 'Bronze cladding on the ramp', finish: 'Opened October 2017' },
+    coaldrops: { ground: 600, steel: true, plan: 'Heatherwick’s plan to join two Victorian sheds', struct: 'New steel roof on 54 columns', skin: 'Welsh slate and glazing', finish: 'Opened 26 October 2018' },
+    bishopsgate: { ground: 600, plan: 'PLP’s vertical village, after the Pinnacle core is removed', struct: 'The frame rises on the cleared site', skin: 'Glass curtain wall', finish: 'Completed 2020' },
+    battersea: { ground: 470, steel: true, plan: 'WilkinsonEyre’s restoration plan', struct: '24,000 t of new steelwork inside the old shell', skin: 'Restored brick and rebuilt chimneys', finish: 'Reopened 14 October 2022' },
   };
-
   /* ---------- build the depth planes ---------- */
   const DEPTH = { photo: 0, title: 70, hero: 150, fore: 215, pins: 190 };
   const stage = $('stage');
@@ -987,23 +1094,28 @@ html { scroll-behavior: smooth; }
   const svg = (inner) => `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">${inner}</svg>`;
 
   const cards = MARVELS.map((m) => {
-    const ih = Math.round(1000 * m.img.h / m.img.w);
-    const img = (src, extra = '') => `<image href="photos/${m.key}-${src}" x="0" y="${m.img.y}" width="1000" height="${ih}" preserveAspectRatio="none" ${extra}/>`;
+    const cw0 = m.img.cw || 1000, ix = m.img.x || 0, ih = Math.round(cw0 * m.img.h / m.img.w);
+    const img = (src, extra = '') => `<image href="photos/${m.key}-${src}" x="${ix}" y="${m.img.y}" width="${cw0}" height="${ih}" preserveAspectRatio="none" ${extra}/>`;
+    // portrait photos sit in a blurred, stretched copy of themselves, like an iPhone wallpaper
+    const ext = cw0 < 1000 ? `<image href="photos/${m.key}-bg.jpg" x="-60" y="-140" width="1120" height="905" preserveAspectRatio="xMidYMid slice" style="filter:blur(22px) brightness(.8)"/>` : '';
+    const ts = m.title.s || 190;
     const k = m.key;
     const planes = {
-      photo: svg(`<defs><clipPath id="${k}-c"><rect width="${W}" height="${H}" rx="46"/></clipPath></defs><g clip-path="url(#${k}-c)">${img('bg.jpg')}</g>`),
+      photo: svg(`<defs><clipPath id="${k}-c"><rect width="${W}" height="${H}" rx="46"/></clipPath></defs><g clip-path="url(#${k}-c)">${ext}${img('bg.jpg')}</g>`),
       title: svg(`<g text-anchor="middle" fill="${m.title.ink}" style="font-family:var(--sf-display)">
-          <text x="${m.title.x}" y="${m.title.y - 118}" style="font-size:26px;font-weight:600;letter-spacing:.2px" opacity=".92">${m.city}</text>
-          <text class="yr" x="${m.title.x}" y="${m.title.y + 40}" style="font-size:190px;font-weight:700;letter-spacing:-6px">${m.year}</text></g>`),
+          <text x="${m.title.x}" y="${(m.title.y + 40 - ts * .83).toFixed(0)}" style="font-size:${Math.max(20, ts * .14).toFixed(0)}px;font-weight:600;letter-spacing:.2px" opacity=".92">${m.city}</text>
+          <text class="yr" x="${m.title.x}" y="${m.title.y + 40}" style="font-size:${ts}px;font-weight:700;letter-spacing:${(-ts / 32).toFixed(1)}px">${m.year}</text></g>`),
       // the building plane doubles as the construction story: site, blueprint, structure, then the finished skin
       hero: svg(`<defs><clipPath id="${k}-h"><rect x="0" y="-600" width="${W}" height="${H + 600}" rx="46"/></clipPath>
           <clipPath id="${k}-site"><rect x="-50" y="${BUILD[k].ground}" width="1100" height="${H - BUILD[k].ground + 50}"/></clipPath>
           <clipPath id="${k}-cl"><rect class="b-cl" x="-50" y="${BUILD[k].ground}" width="1100" height="0"/></clipPath>
           <clipPath id="${k}-cs"><rect class="b-cs" x="-50" y="${BUILD[k].ground}" width="1100" height="0"/></clipPath>
           <clipPath id="${k}-ck"><rect class="b-ck" x="-50" y="-600" width="1100" height="${BUILD[k].ground + 600}"/></clipPath>
+          <linearGradient id="${k}-hg" gradientUnits="userSpaceOnUse" x1="0" y1="${m.img.y}" x2="0" y2="${m.img.y + 110}"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>
+          <mask id="${k}-hm" maskUnits="userSpaceOnUse" x="-100" y="-700" width="1200" height="1400"><rect x="-100" y="-700" width="1200" height="1400" fill="url(#${k}-hg)"/></mask>
           <pattern id="${k}-grid" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="#9fd4ff" stroke-opacity=".32" stroke-width="1"/></pattern></defs>
           <rect class="b-grid" x="0" y="0" width="${W}" height="${BUILD[k].ground}" fill="url(#${k}-grid)" opacity="0"/>
-          <g clip-path="url(#${k}-h)">
+          <g clip-path="url(#${k}-h)" mask="url(#${k}-hm)">
             <g clip-path="url(#${k}-site)">${img('hero.webp')}</g>
             <g clip-path="url(#${k}-cs)">${img('hero.webp', `style="filter:${BUILD[k].steel ? 'grayscale(1) sepia(.35) hue-rotate(175deg) brightness(.85) contrast(1.15)' : 'grayscale(1) brightness(1.04) contrast(.88)'}"`)}</g>
             <g clip-path="url(#${k}-ck)">${img('hero.webp')}</g>
@@ -1188,7 +1300,7 @@ html { scroll-behavior: smooth; }
     const list = pinned(), at = list.findIndex(([, k]) => k === n);
     openN = n;
     callout.innerHTML = `<div class="co-top"><b>${n + 1}</b><h3>${d[0]}</h3><button type="button" class="co-x" aria-label="Close">✕</button></div>
-      <p>${d[1]}</p>
+      ${imr(d[1])}
       <div class="co-act">
         <button type="button" class="capsule glass" data-act="story">Read in the story</button>
         ${d[3] ? `<button type="button" class="capsule glass" data-act="rel">See ${LINKNAME[d[3]]}</button>` : ''}
@@ -1322,7 +1434,7 @@ html { scroll-behavior: smooth; }
   const setSource = (s) => { if (source !== s) { source = s; $('sourceName').textContent = s; } };
 
   addEventListener('pointermove', (e) => {
-    if (down || source === 'lid tilt') return;
+    if (down || source === 'lid tilt' || hand.on) return;
     target.x = (e.clientX / innerWidth - .5) * 2;
     target.y = (e.clientY / innerHeight - .5) * 2;
     lastInput = performance.now();
@@ -1331,7 +1443,7 @@ html { scroll-behavior: smooth; }
 
   let base = null;
   addEventListener('deviceorientation', (e) => {
-    if (e.gamma == null || source === 'lid tilt') return;
+    if (e.gamma == null || source === 'lid tilt' || hand.on) return;
     if (!base) base = { b: e.beta, g: e.gamma };
     target.x = clamp((e.gamma - base.g) / 22);
     target.y = clamp((e.beta - base.b) / 22);
@@ -1340,7 +1452,7 @@ html { scroll-behavior: smooth; }
   });
 
   function frameLoop(t) {
-    if (source !== 'lid tilt' && t - lastInput > 2500 && !reduced) {
+    if (source !== 'lid tilt' && !hand.on && t - lastInput > 2500 && !reduced) {
       target.x = Math.sin(t / 2400) * .38;
       target.y = Math.cos(t / 3100) * .22;
       if (source !== 'drift') setSource('drift');
@@ -1473,8 +1585,132 @@ html { scroll-behavior: smooth; }
     target.x = target.y = 0; lastInput = performance.now();
     setSource('pointer');
   }
-  $('camBtn').addEventListener('click', () => (cam.stream ? stopCam() : startCam()));
+  $('camBtn').addEventListener('click', () => { if (hand.on) stopHand(); cam.stream ? stopCam() : startCam(); });
   $('recenterBtn').addEventListener('click', () => { Object.assign(cam, { ref: null, frame: 0, sx: 0, sy: 0, bad: 0 }); });
+
+
+  /* ---------- hand control: the front camera finds your hand ----------
+     MediaPipe Hands (Apache 2.0, files in mp/) returns 21 points on the hand for every frame,
+     all on this device. The palm centre drives the depth tilt, a quick sideways flick changes
+     the building (like a swipe), and pinching thumb and index finger plays the construction. */
+  const hand = { on: false, stream: null, video: null, mp: null, busy: false, hist: [], lock: 0, pinched: false, lostAt: 0, seen: false };
+  const hud = document.createElement('div');
+  hud.className = 'hud glass'; hud.hidden = true;
+  hud.innerHTML = '<canvas width="224" height="168"></canvas><span>Show your hand</span>';
+  stage.appendChild(hud);
+  const hctx = hud.querySelector('canvas').getContext('2d');
+  const dot = document.createElement('div'); dot.className = 'hand-dot'; stage.appendChild(dot);
+  const toast = document.createElement('div'); toast.className = 'gtoast glass'; stage.appendChild(toast);
+  let toastT = 0;
+  const say = (t) => { toast.textContent = t; toast.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove('show'), 900); };
+  const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+  function drawHud(lm) {
+    const c = hctx.canvas, w = c.width, h = c.height;
+    hctx.save(); hctx.clearRect(0, 0, w, h);
+    if (hand.video && hand.video.readyState >= 2) { hctx.translate(w, 0); hctx.scale(-1, 1); hctx.globalAlpha = .55; hctx.drawImage(hand.video, 0, 0, w, h); hctx.setTransform(1, 0, 0, 1, 0, 0); hctx.globalAlpha = 1; }
+    else { hctx.fillStyle = 'rgba(0,0,0,.35)'; hctx.fillRect(0, 0, w, h); }
+    if (lm) {
+      const P = (p) => [(1 - p.x) * w, p.y * h];
+      hctx.strokeStyle = '#64d2ff'; hctx.lineWidth = 3; hctx.lineCap = 'round';
+      for (const [a, b] of BONES) { const [x1, y1] = P(lm[a]), [x2, y2] = P(lm[b]); hctx.beginPath(); hctx.moveTo(x1, y1); hctx.lineTo(x2, y2); hctx.stroke(); }
+      hctx.fillStyle = '#fff';
+      for (const p of lm) { const [x, y] = P(p); hctx.beginPath(); hctx.arc(x, y, 3.5, 0, 7); hctx.fill(); }
+    }
+    hctx.restore();
+  }
+  // one frame of landmarks in, movement out
+  function handFrame(lm, t = performance.now()) {
+    drawHud(lm);
+    if (!lm) {
+      dot.classList.remove('on');
+      if (hand.seen && t - hand.lostAt > 700) { target.x = target.y = 0; }
+      if (hand.seen && !hand.lostAt) hand.lostAt = t;
+      hud.classList.remove('seen'); hud.querySelector('span').textContent = 'Show your hand';
+      hand.hist = [];
+      return;
+    }
+    hand.lostAt = 0; hand.seen = true;
+    hud.classList.add('seen'); hud.querySelector('span').textContent = 'Hand found · 21 points';
+    const ids = [0, 5, 9, 13, 17];
+    let px = 0, py = 0; for (const i of ids) { px += lm[i].x; py += lm[i].y; } px = 1 - px / 5; py /= 5; // mirrored, like a selfie
+    const size = Math.hypot(lm[0].x - lm[9].x, lm[0].y - lm[9].y) || .2;
+    target.x = clamp((px - .5) * 2.6); target.y = clamp((py - .5) * 2.6);
+    lastInput = t; setSource('hand');
+    const r = stage.getBoundingClientRect();
+    dot.style.transform = `translate(${(px * r.width).toFixed(1)}px, ${(py * r.height).toFixed(1)}px)`;
+    dot.classList.add('on');
+    // flick: the palm crosses a good part of the frame quickly
+    hand.hist.push([t, px]); while (hand.hist.length && t - hand.hist[0][0] > 320) hand.hist.shift();
+    if (t > hand.lock && hand.hist.length > 2) {
+      const dx = px - hand.hist[0][1];
+      if (Math.abs(dx) > .2) {
+        const dir = dx < 0 ? 1 : -1;   // hand moves left: next building, the way a finger swipe pushes the card
+        if ((dir > 0 && cur < MARVELS.length - 1) || (dir < 0 && cur > 0)) { go(cur + dir); say(dir > 0 ? '← Next building' : 'Previous building →'); }
+        hand.lock = t + 800; hand.hist = [];
+      }
+    }
+    // pinch: thumb tip meets index tip
+    const pinch = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y) / size < .32;
+    dot.classList.toggle('pinch', pinch);
+    if (pinch && !hand.pinched && t > hand.lock) { hand.pinched = true; endBuild(false); startBuild(); say('Pinch · watch it get built'); }
+    else if (!pinch && hand.pinched && Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y) / size > .45) hand.pinched = false;
+  }
+  function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('load')); document.head.appendChild(s); }); }
+  async function startHand() {
+    const note = $('camNote');
+    if (cam.stream) stopCam();
+    $('handLabel').textContent = 'Starting camera…';
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error('none'), { name: 'NotFoundError' });
+      hand.stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false });
+      hand.video = document.createElement('video');
+      hand.video.muted = true; hand.video.playsInline = true; hand.video.srcObject = hand.stream;
+      await hand.video.play();
+      $('handLabel').textContent = 'Loading hand model…';
+      if (!window.Hands) await loadScript('mp/hands.js');
+      if (!hand.mp) {
+        // model files carry a .wasm suffix so any static host serves them as binary
+        hand.mp = new window.Hands({ locateFile: (f) => 'mp/' + f + (/\.(binarypb|tflite|data)$/.test(f) ? '.wasm' : '') });
+        hand.mp.setOptions({ maxNumHands: 1, modelComplexity: 0, minDetectionConfidence: .6, minTrackingConfidence: .5, selfieMode: false });
+        hand.mp.onResults((r) => handFrame(r.multiHandLandmarks && r.multiHandLandmarks[0]));
+      }
+      hand.on = true;
+      $('handBtn').setAttribute('aria-pressed', 'true'); $('handLabel').textContent = 'Stop hand control';
+      hud.hidden = false; note.hidden = false;
+      note.textContent = 'Hold your hand up to the camera. Move it to tilt the building, flick it sideways to change building, pinch to watch it get built. The camera image stays on this device.';
+      const pump = async () => {
+        if (!hand.on) return;
+        if (!hand.busy && hand.video.readyState >= 2) { hand.busy = true; try { await hand.mp.send({ image: hand.video }); } catch (e) {} hand.busy = false; }
+        requestAnimationFrame(pump);
+      };
+      pump();
+    } catch (err) {
+      hand.stream?.getTracks().forEach((t) => t.stop()); hand.stream = null; hand.on = false;
+      $('handLabel').textContent = 'Hand control';
+      note.hidden = false;
+      const live = 'https://snehabaid1998-byte.github.io/spatial-marvels/', name = err && err.name;
+      if (window.self !== window.top && (name === 'NotAllowedError' || name === 'SecurityError')) note.innerHTML = `This viewer doesn’t allow camera access. Open the <a href="${live}" target="_blank" rel="noopener">live site</a> to use hand control.`;
+      else if (name === 'NotAllowedError') note.textContent = 'The camera was blocked. Allow camera access for this site in your browser settings, then tap Hand control again.';
+      else if (name === 'NotFoundError' || name === 'OverconstrainedError') note.textContent = 'No camera was found on this device. Swipe and tilt still work.';
+      else if (name === 'NotReadableError') note.textContent = 'The camera is in use by another app. Close it and try again.';
+      else note.textContent = `Hand control couldn’t start${name && name !== 'Error' ? ` (${name})` : ''}. Swipe and tilt still work.`;
+    }
+  }
+  function stopHand() {
+    hand.on = false; hand.stream?.getTracks().forEach((t) => t.stop());
+    Object.assign(hand, { stream: null, video: null, hist: [], seen: false, pinched: false });
+    hud.hidden = true; dot.classList.remove('on'); $('camNote').hidden = true;
+    $('handBtn').setAttribute('aria-pressed', 'false'); $('handLabel').textContent = 'Hand control';
+    target.x = target.y = 0; lastInput = performance.now(); setSource('pointer');
+  }
+  $('handBtn').addEventListener('click', () => (hand.on ? stopHand() : startHand()));
+  // ?demo lets a recording feed recorded landmarks through the same path
+  if (/[?&]demo\b/.test(location.search)) window.spatialDemo = {
+    handOn() { hand.on = true; hud.hidden = false; $('handBtn').setAttribute('aria-pressed', 'true'); $('handLabel').textContent = 'Stop hand control'; },
+    handOff: () => stopHand(), frame: (lm) => handFrame(lm), go: (i) => go(i), openPin: (n) => openPin(n), closePin: () => closePin(),
+    build: () => { endBuild(false); startBuild(); }, setDrag: (d) => { drag = d; cards[cur].el.classList.toggle('dragging', d !== 0); place(); },
+    tilt: (x, y) => { target.x = x; target.y = y; lastInput = performance.now(); setSource('device tilt'); },
+  };
 
   addEventListener('resize', layout);
   // a link ending in #sydney (or any building key) opens on that building
