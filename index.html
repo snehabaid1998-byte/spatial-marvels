@@ -381,8 +381,8 @@ html { scroll-behavior: smooth; }
   .split, .decisions { grid-template-columns: 1fr; }
 }
 /* hand control */
-.hud { position: absolute; z-index: 7; right: 12px; top: 10px; width: 112px; border-radius: 14px; overflow: hidden; pointer-events: none; padding: 0; }
-.hud canvas { display: block; width: 112px; height: 84px; }
+.hud { position: absolute; z-index: 7; right: 12px; top: 10px; width: 120px; border-radius: 14px; overflow: hidden; pointer-events: none; padding: 0; }
+.hud canvas { display: block; width: 120px; height: 90px; }
 .hud span { display: block; padding: 4px 8px 5px; font: 600 11px/1.2 var(--sf); color: var(--label-2); }
 .hud.seen span { color: #30d158; }
 .hand-dot { position: absolute; z-index: 6; left: 0; top: 0; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; pointer-events: none;
@@ -1593,7 +1593,7 @@ html { scroll-behavior: smooth; }
      MediaPipe Hands (Apache 2.0, files in mp/) returns 21 points on the hand for every frame,
      all on this device. The palm centre drives the depth tilt, a quick sideways flick changes
      the building (like a swipe), and pinching thumb and index finger plays the construction. */
-  const hand = { on: false, stream: null, video: null, mp: null, busy: false, hist: [], lock: 0, pinched: false, lostAt: 0, seen: false };
+  const hand = { on: false, stream: null, video: null, mp: null, busy: false, hist: [], lock: 0, lostAt: 0, seen: false, g: '', gAt: 0, fired: false };
   const hud = document.createElement('div');
   hud.className = 'hud glass'; hud.hidden = true;
   hud.innerHTML = '<canvas width="224" height="168"></canvas><span>Show your hand</span>';
@@ -1618,42 +1618,86 @@ html { scroll-behavior: smooth; }
     }
     hctx.restore();
   }
-  // one frame of landmarks in, movement out
+  /* every gesture does exactly one thing */
+  const GESTURES = {
+    open:  ['✋', 'Open palm', 'Move to look around'],
+    left:  ['👈', 'Swipe left', 'Next building'],
+    right: ['👉', 'Swipe right', 'Previous building'],
+    point: ['☝️', 'Point', 'Next annotation'],
+    pinch: ['🤏', 'Pinch', 'Watch it get built'],
+    peace: ['✌️', 'Two fingers', 'Read the full story'],
+    fist:  ['✊', 'Fist', 'Close and go back'],
+  };
+  const d2 = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function classify(lm) {
+    const size = d2(lm[0], lm[9]) || .2;
+    // pinch: thumb and index tips meet while the index stays out from the palm (a fist tucks it in)
+    if (d2(lm[4], lm[8]) / size < .32 && d2(lm[8], lm[0]) > d2(lm[5], lm[0]) * 1.15) return 'pinch';
+    // a finger is out when its tip is further from the wrist than its middle joint
+    const ext = [[8, 6], [12, 10], [16, 14], [20, 18]].map(([tip, pip]) => d2(lm[tip], lm[0]) > d2(lm[pip], lm[0]) * 1.1);
+    const n = ext.filter(Boolean).length;
+    if (n === 4) return 'open';
+    if (n === 0) return 'fist';
+    if (ext[0] && n === 1) return 'point';
+    if (ext[0] && ext[1] && n === 2) return 'peace';
+    return '';
+  }
+  function act(g) {
+    say(`${GESTURES[g][0]} ${GESTURES[g][2]}`);
+    if (g === 'left') go(cur + 1);
+    else if (g === 'right') go(cur - 1);
+    else if (g === 'pinch') { closePin(); endBuild(false); startBuild(); }
+    else if (g === 'point') {
+      endBuild(false);
+      const list = pinned();
+      if (!list.length) { say('☝️ No pins on this building'); return; }
+      const at = list.findIndex(([, k]) => k === openN);
+      openPin(list[(at + 1) % list.length][1]);
+    }
+    else if (g === 'peace') { closePin(); endBuild(false); $('story').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); }
+    else if (g === 'fist') {
+      closePin(); endBuild(false);
+      if (scrollY > 40) document.querySelector('.app').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
+    }
+  }
+  // one frame of landmarks in, one action out
   function handFrame(lm, t = performance.now()) {
     drawHud(lm);
+    const label = hud.querySelector('span');
     if (!lm) {
       dot.classList.remove('on');
-      if (hand.seen && t - hand.lostAt > 700) { target.x = target.y = 0; }
       if (hand.seen && !hand.lostAt) hand.lostAt = t;
-      hud.classList.remove('seen'); hud.querySelector('span').textContent = 'Show your hand';
-      hand.hist = [];
+      if (hand.seen && t - hand.lostAt > 700) { target.x = target.y = 0; }
+      hud.classList.remove('seen'); label.textContent = 'Show your hand';
+      hand.hist = []; hand.g = '';
       return;
     }
     hand.lostAt = 0; hand.seen = true;
-    hud.classList.add('seen'); hud.querySelector('span').textContent = 'Hand found · 21 points';
+    hud.classList.add('seen');
+    const g = classify(lm);
+    if (g !== hand.g) { hand.g = g; hand.gAt = t; hand.fired = false; }
+    label.textContent = g ? `${GESTURES[g][0]} ${GESTURES[g][1]}` : 'Hand found';
     const ids = [0, 5, 9, 13, 17];
     let px = 0, py = 0; for (const i of ids) { px += lm[i].x; py += lm[i].y; } px = 1 - px / 5; py /= 5; // mirrored, like a selfie
-    const size = Math.hypot(lm[0].x - lm[9].x, lm[0].y - lm[9].y) || .2;
-    target.x = clamp((px - .5) * 2.6); target.y = clamp((py - .5) * 2.6);
+    // open palm: the hand's position tilts the depth layers
+    if (g === 'open') { target.x = clamp((px - .5) * 2.6); target.y = clamp((py - .5) * 2.6); }
     lastInput = t; setSource('hand');
     const r = stage.getBoundingClientRect();
     dot.style.transform = `translate(${(px * r.width).toFixed(1)}px, ${(py * r.height).toFixed(1)}px)`;
-    dot.classList.add('on');
-    // flick: the palm crosses a good part of the frame quickly
-    hand.hist.push([t, px]); while (hand.hist.length && t - hand.hist[0][0] > 320) hand.hist.shift();
-    if (t > hand.lock && hand.hist.length > 2) {
+    dot.classList.add('on'); dot.classList.toggle('pinch', g === 'pinch');
+    // swipes: an open palm crossing a good part of the frame quickly
+    hand.hist.push([t, px, g]); while (hand.hist.length && t - hand.hist[0][0] > 320) hand.hist.shift();
+    if (t > hand.lock && hand.hist.length > 2 && hand.hist.every((h) => h[2] === 'open' || h[2] === '')) {
       const dx = px - hand.hist[0][1];
       if (Math.abs(dx) > .2) {
-        const dir = dx < 0 ? 1 : -1;   // hand moves left: next building, the way a finger swipe pushes the card
-        if ((dir > 0 && cur < MARVELS.length - 1) || (dir < 0 && cur > 0)) { go(cur + dir); say(dir > 0 ? '← Next building' : 'Previous building →'); }
+        const dir = dx < 0 ? 'left' : 'right';
+        if (dir === 'left' ? cur < MARVELS.length - 1 : cur > 0) act(dir); else say(dir === 'left' ? 'That’s the last building' : 'That’s the first building');
         hand.lock = t + 800; hand.hist = [];
       }
     }
-    // pinch: thumb tip meets index tip
-    const pinch = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y) / size < .32;
-    dot.classList.toggle('pinch', pinch);
-    if (pinch && !hand.pinched && t > hand.lock) { hand.pinched = true; endBuild(false); startBuild(); say('Pinch · watch it get built'); }
-    else if (!pinch && hand.pinched && Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y) / size > .45) hand.pinched = false;
+    // held shapes fire once, then wait for a new shape
+    const hold = g === 'pinch' ? 150 : 400;
+    if (g && g !== 'open' && !hand.fired && t - hand.gAt > hold && t > hand.lock) { hand.fired = true; hand.lock = t + 500; act(g); }
   }
   function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('load')); document.head.appendChild(s); }); }
   async function startHand() {
@@ -1677,7 +1721,7 @@ html { scroll-behavior: smooth; }
       hand.on = true;
       $('handBtn').setAttribute('aria-pressed', 'true'); $('handLabel').textContent = 'Stop hand control';
       hud.hidden = false; note.hidden = false;
-      note.textContent = 'Hold your hand up to the camera. Move it to tilt the building, flick it sideways to change building, pinch to watch it get built. The camera image stays on this device.';
+      note.textContent = 'Hold your hand up to the camera. ✋ Move an open palm to look around · 👈 Swipe left for the next building · 👉 Swipe right for the previous one · ☝️ Point for the next annotation · 🤏 Pinch to watch it get built · ✌️ Two fingers for the full story · ✊ Fist to close and go back. The camera image stays on this device.';
       const pump = async () => {
         if (!hand.on) return;
         if (!hand.busy && hand.video.readyState >= 2) { hand.busy = true; try { await hand.mp.send({ image: hand.video }); } catch (e) {} hand.busy = false; }
@@ -1698,7 +1742,7 @@ html { scroll-behavior: smooth; }
   }
   function stopHand() {
     hand.on = false; hand.stream?.getTracks().forEach((t) => t.stop());
-    Object.assign(hand, { stream: null, video: null, hist: [], seen: false, pinched: false });
+    Object.assign(hand, { stream: null, video: null, hist: [], seen: false, g: '', fired: false });
     hud.hidden = true; dot.classList.remove('on'); $('camNote').hidden = true;
     $('handBtn').setAttribute('aria-pressed', 'false'); $('handLabel').textContent = 'Hand control';
     target.x = target.y = 0; lastInput = performance.now(); setSource('pointer');
