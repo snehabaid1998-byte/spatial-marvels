@@ -81,6 +81,7 @@ body {
 .capsule svg { width: 15px; height: 15px; }
 .capsule:focus-visible, .nav:focus-visible, .dot:focus-visible, .credit a:focus-visible { outline: 3px solid rgba(10,132,255,.7); outline-offset: 2px; }
 #camPreview { width: 24px; height: 18px; border-radius: 4px; }
+.note a { color: #64d2ff; }
 .note { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--label-2); text-align: right; }
 
 /* stage + depth cards */
@@ -1190,16 +1191,24 @@ html { scroll-behavior: smooth; }
 
   /* Lid tilt: laptops have no tilt sensor, so the webcam stands in for one.
      When the lid moves, the whole room slides in the camera image. We compare the
-     brightness profile of each frame's rows and columns against a reference frame
-     and read the shift as screen tilt. Nothing leaves the page. */
-  const CW = 64, CH = 48, MAXS = 14;
-  const cam = { stream: null, video: null, ctx: null, ref: null, sx: 0, sy: 0, frame: 0, bad: 0 };
+     edge profile of each frame's rows and columns against a reference frame and
+     read the shift as screen tilt. Edges (brightness changes), not raw brightness,
+     so the webcam re-exposing as the lid moves doesn't throw the reading off.
+     Nothing leaves the page. */
+  const CW = 96, CH = 72, MAXS = 24;
+  const FOV_X = 60, FOV_Y = 45;   // typical laptop webcam field of view, degrees
+  const FULL_TILT = 6;            // degrees of lid movement that give the card its full tilt
+  const cam = { stream: null, video: null, ctx: null, ref: null, sx: 0, sy: 0, frame: 0, bad: 0, peak: 0, started: 0, hinted: false };
   const prev = $('camPreview'), pctx = prev.getContext('2d');
 
-  function norm(a) {
-    let m = 0; for (const v of a) m += v; m /= a.length;
-    let s = 0; for (const v of a) s += (v - m) ** 2; s = Math.sqrt(s / a.length) || 1;
-    return a.map((v) => (v - m) / s);
+  function edges(a) {
+    // light smoothing, then first difference, then normalise
+    const n = a.length, sm = new Float32Array(n), d = new Float32Array(n - 1);
+    for (let i = 0; i < n; i++) sm[i] = (a[Math.max(0, i - 1)] + 2 * a[i] + a[Math.min(n - 1, i + 1)]) / 4;
+    for (let i = 0; i < n - 1; i++) d[i] = sm[i + 1] - sm[i];
+    let m = 0; for (const v of d) m += v; m /= d.length;
+    let s = 0; for (const v of d) s += (v - m) ** 2; s = Math.sqrt(s / d.length) || 1;
+    return d.map((v) => (v - m) / s);
   }
   function profiles() {
     cam.ctx.drawImage(cam.video, 0, 0, CW, CH);
@@ -1209,8 +1218,8 @@ html { scroll-behavior: smooth; }
       const i = (y * CW + x) * 4, v = d[i] * .3 + d[i + 1] * .59 + d[i + 2] * .11;
       col[x] += v; row[y] += v;
     }
-    pctx.putImageData(img, 0, 0);
-    return { col: norm(col), row: norm(row) };
+    if (cam.frame % 4 === 0) pctx.drawImage(cam.video, 0, 0, prev.width, prev.height);
+    return { col: edges(col), row: edges(row) };
   }
   function bestShift(ref, cur) {
     const errs = [];
@@ -1218,26 +1227,36 @@ html { scroll-behavior: smooth; }
     for (let s = -MAXS; s <= MAXS; s++) {
       let e = 0, n = 0;
       for (let i = 0; i < ref.length; i++) { const j = i + s; if (j < 0 || j >= cur.length) continue; e += Math.abs(ref[i] - cur[j]); n++; }
-      e /= n; errs.push(e);
+      e = n > ref.length * .4 ? e / n : Infinity; errs.push(e);
       if (e < bestE) { bestE = e; best = s; }
     }
     const b = best + MAXS;
     let off = 0;
-    if (b > 0 && b < errs.length - 1) { const den = errs[b - 1] - 2 * errs[b] + errs[b + 1]; if (den > 1e-6) off = (errs[b - 1] - errs[b + 1]) / (2 * den); }
+    if (b > 0 && b < errs.length - 1 && isFinite(errs[b - 1]) && isFinite(errs[b + 1])) {
+      const den = errs[b - 1] - 2 * errs[b] + errs[b + 1]; if (den > 1e-6) off = (errs[b - 1] - errs[b + 1]) / (2 * den);
+    }
     return { s: best + off, e: bestE };
   }
   function camStep() {
     if (!cam.video || cam.video.readyState < 2) return;
-    if (++cam.frame % 2) return;
+    cam.frame++;
     const p = profiles();
-    if (!cam.ref || cam.frame < 12) { cam.ref = p; return; }
+    if (!cam.ref || cam.frame < 8) { cam.ref = p; return; }
     const cx = bestShift(cam.ref.col, p.col), cy = bestShift(cam.ref.row, p.row);
-    // a big mismatch means the scene changed (someone walked past): take a fresh reference
-    if (cx.e > .9 || cy.e > .9) { if (++cam.bad > 20) { cam.ref = p; cam.bad = 0; } return; }
+    // no good match for a while means the view really changed (someone walked past): start fresh
+    if (cx.e > 1.15 && cy.e > 1.15) { if (++cam.bad > 45) { cam.ref = p; cam.bad = 0; cam.sx = cam.sy = 0; } return; }
     cam.bad = 0;
-    cam.sx += (cx.s - cam.sx) * .5; cam.sy += (cy.s - cam.sy) * .5;
-    target.x = clamp(cam.sx / 8);
-    target.y = clamp(cam.sy / 6);
+    if (cx.e <= 1.15) cam.sx += (cx.s - cam.sx) * .45;
+    if (cy.e <= 1.15) cam.sy += (cy.s - cam.sy) * .45;
+    const degX = cam.sx / (CW - 1) * FOV_X, degY = cam.sy / (CH - 1) * FOV_Y;
+    target.x = clamp(degX / FULL_TILT);
+    target.y = clamp(degY / FULL_TILT);
+    cam.peak = Math.max(cam.peak, Math.abs(degX), Math.abs(degY));
+    if (cam.frame % 6 === 0) $('sourceName').textContent = `lid tilt ${degY >= 0 ? '↓' : '↑'}${Math.abs(degY).toFixed(1)}° ${degX >= 0 ? '→' : '←'}${Math.abs(degX).toFixed(1)}°`;
+    if (!cam.hinted && performance.now() - cam.started > 7000 && cam.peak < 1) {
+      cam.hinted = true;
+      $('camNote').textContent = 'No movement picked up yet. Tilt the lid a little further, or turn on a light: the camera needs to see some detail in the room.';
+    }
   }
   async function startCam() {
     const note = $('camNote');
@@ -1249,16 +1268,32 @@ html { scroll-behavior: smooth; }
       await cam.video.play();
       const c = document.createElement('canvas'); c.width = CW; c.height = CH;
       cam.ctx = c.getContext('2d', { willReadFrequently: true });
-      cam.ref = null; cam.frame = 0; cam.sx = cam.sy = 0;
+      Object.assign(cam, { ref: null, frame: 0, sx: 0, sy: 0, bad: 0, peak: 0, started: performance.now(), hinted: false });
       setSource('lid tilt');
       $('camBtn').setAttribute('aria-pressed', 'true');
       $('camLabel').textContent = 'Stop lid tilt';
       prev.hidden = false; $('recenterBtn').hidden = false;
       note.hidden = false;
-      note.textContent = 'Hold the screen where it feels neutral, then tilt the lid. The camera image never leaves this page.';
+      note.textContent = 'Hold the screen where it feels neutral, then tilt the lid back and forth. The reading shows in the depth chip. The camera image never leaves this page.';
     } catch (err) {
+      cam.stream?.getTracks().forEach((t) => t.stop());
+      cam.stream = null;
       note.hidden = false;
-      note.textContent = 'The camera is blocked here, so lid tilt is off. Open the local copy in Chrome to use it. Pointer and trackpad still drive the depth.';
+      const live = 'https://snehabaid1998-byte.github.io/spatial-marvels/';
+      const name = err && err.name;
+      if (window.self !== window.top && (name === 'NotAllowedError' || name === 'SecurityError' || !navigator.mediaDevices)) {
+        note.innerHTML = `This viewer doesn’t allow camera access. Open the <a href="${live}" target="_blank" rel="noopener">live site</a> in Chrome to use lid tilt.`;
+      } else if (name === 'NotAllowedError') {
+        note.textContent = 'Chrome blocked the camera. Click the camera icon at the right end of the address bar, choose Allow, reload, then press Sense lid tilt again.';
+      } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+        note.textContent = 'No camera was found on this device. Pointer and trackpad still drive the depth.';
+      } else if (name === 'NotReadableError') {
+        note.textContent = 'The camera is in use by another app, such as Zoom or Teams. Close it and try again.';
+      } else if (!window.isSecureContext) {
+        note.innerHTML = `Chrome only allows the camera on secure pages. Open the <a href="${live}" target="_blank" rel="noopener">live site</a> instead.`;
+      } else {
+        note.textContent = `The camera couldn’t start${name ? ` (${name})` : ''}. Pointer and trackpad still drive the depth.`;
+      }
     }
   }
   function stopCam() {
@@ -1271,7 +1306,7 @@ html { scroll-behavior: smooth; }
     setSource('pointer');
   }
   $('camBtn').addEventListener('click', () => (cam.stream ? stopCam() : startCam()));
-  $('recenterBtn').addEventListener('click', () => { cam.ref = null; cam.frame = 0; cam.sx = cam.sy = 0; });
+  $('recenterBtn').addEventListener('click', () => { Object.assign(cam, { ref: null, frame: 0, sx: 0, sy: 0, bad: 0 }); });
 
   addEventListener('resize', layout);
   // a link ending in #sydney (or any building key) opens on that building
